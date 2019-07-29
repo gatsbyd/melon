@@ -1,0 +1,7 @@
+###################################################################
+#SRC CMAKELISTS
+###################################################################
+
+file(GLOB_RECURSE srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
+add_library(lib SHARED ${srcs})
