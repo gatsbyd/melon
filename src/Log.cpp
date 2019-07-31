@@ -5,32 +5,50 @@
 
 namespace melon {
 
+const char* LogLevelName[] {
+	"DEBUG",
+	"INFO ",
+	"WARN ",
+	"ERROR",
+	"FATAL" 
+};
+
 LogLevel g_logLevel = LogLevel::DEBUG;
 
 LogEvent::LogEvent(pid_t pid, LogLevel logLevel, 
-					const std::string file_name,
-					int line) {
-}
-
-LogEvent::~LogEvent() {
-	//todo: singleton
-	Logger log;
-	log.log(*this);
+					const char* file_name,
+					int line) 
+	: pid_(pid), logLevel_(logLevel), 
+		file_name_(file_name), line_(line) {
 }
 
 std::ostream& LogEvent::getStream() {
 	return content_;
 }
 
+LogWrapper::LogWrapper(LogEvent::ptr event)
+	:event_(event){
+}
+
+LogWrapper::~LogWrapper() {
+	//todo: singleton
+	Logger log;
+	log.log(event_);
+}
+
+std::ostream& LogWrapper::getStream() {
+	return event_->getStream();
+}
+
+Logger::Logger() {
+	addAppender(LogAppender::ptr(new ConsoleAppender()));
+}
+
 void Logger::setLogLevel(LogLevel logLevel) {
 	g_logLevel = logLevel;
 }
 
-inline LogLevel Logger::getLogLevel() {
-	return g_logLevel;
-}
-
-void Logger::log(const LogEvent& event) {
+void Logger::log(LogEvent::ptr event) {
 	//todo: thread safe
 	for (auto& appender : appenders_) {
 		appender->log(event);
@@ -58,13 +76,20 @@ void Logger::clearAppender() {
 	appenders_.clear();
 }
 
-std::string LogAppender::format(const LogEvent& event) {
+std::string LogAppender::format(LogEvent::ptr event) {
 	std::ostringstream ss;
-	ss << "a" << "b";
-	return "";
+	ss << "date" << " "
+		<< "time" << " "
+		<< "microsecond" << " "
+		<< event->pid_ << " "
+		<< LogLevelName[static_cast<int>(event->logLevel_)] << " "
+		<< event->content_.str() << " - "
+		<< event->file_name_ << ":"
+		<< event->line_ << std::endl;
+	return ss.str();
 }
 
-void ConsoleAppender::log(const LogEvent& event) {
+void ConsoleAppender::log(LogEvent::ptr event) {
 	std::cout << format(event);
 }
 

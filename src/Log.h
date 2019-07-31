@@ -5,47 +5,57 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <sys/types.h>
 
 namespace melon {
 
 enum class LogLevel;
-
-LogLevel getLogLevel();
-
-#define LOG_DEBUG if getLogLevel() <= LogLevel::DEBUG \
 	
-
 class LogEvent {
+friend class LogAppender;
+
 public:
+	typedef std::shared_ptr<LogEvent> ptr;
 	LogEvent(pid_t pid, LogLevel logLevel, 
-					const std::string file_name,
+					const char* file_name,
 					int line);
-	~LogEvent();
 	std::ostream& getStream();
+
 private:
 	//todo: time
 	pid_t pid_;
+	//todo: tid
+	//todo: fiber id
 	LogLevel logLevel_;
 	std::ostringstream content_;
 	std::string file_name_;
 	int line_;
 };
 
+class LogWrapper {
+public:
+	LogWrapper(LogEvent::ptr event);
+	~LogWrapper();
+	
+	std::ostream& getStream();
+private:
+	LogEvent::ptr event_;
+};
 
 class LogAppender {
 public:
 	typedef std::shared_ptr<LogAppender> ptr;
 
 	virtual ~LogAppender() {}
-	virtual void log(const LogEvent& event) = 0;
+	virtual void log(LogEvent::ptr event) = 0;
 protected:
-	virtual std::string format(const LogEvent& event);
+	virtual std::string format(LogEvent::ptr event);
 
 };
 
 class ConsoleAppender : public LogAppender {
 public:
-	void log(const LogEvent& event) override;
+	void log(LogEvent::ptr event) override;
 };
 
 
@@ -59,8 +69,9 @@ enum class LogLevel {
 
 class Logger {
 public:
+	Logger();
 
-	void log(const LogEvent& event);
+	void log(LogEvent::ptr event);
 	void addAppender(LogAppender::ptr appender);
 	void delAppender(LogAppender::ptr appender);
 	void clearAppender();
@@ -72,6 +83,16 @@ private:
 	std::vector<LogAppender::ptr> appenders_;
 };
 
+extern LogLevel g_logLevel;
+inline LogLevel Logger::getLogLevel() {
+	return g_logLevel;
 }
+}
+
+#define LOG_DEBUG if (melon::Logger::getLogLevel() <= melon::LogLevel::DEBUG) \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::DEBUG, \
+									__FILE__, __LINE__))).getStream()
+
+
 #endif
 
