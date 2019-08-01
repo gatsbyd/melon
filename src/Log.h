@@ -13,18 +13,18 @@ enum class LogLevel;
 	
 class LogEvent {
 friend class LogAppender;
+friend class LogWrapper;
 
 public:
 	typedef std::shared_ptr<LogEvent> ptr;
-	LogEvent(pid_t pid, LogLevel logLevel, 
+	LogEvent(pid_t tid, LogLevel logLevel, 
 					const char* file_name,
 					int line);
 	std::ostream& getStream();
 
 private:
 	//todo: time
-	pid_t pid_;
-	//todo: tid
+	pid_t tid_;
 	//todo: fiber id
 	LogLevel logLevel_;
 	std::ostringstream content_;
@@ -93,6 +93,18 @@ inline LogLevel Logger::getLogLevel() {
 													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::DEBUG, \
 									__FILE__, __LINE__))).getStream()
 
+#define LOG_INFO if (melon::Logger::getLogLevel() <= melon::LogLevel::INFO) \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::INFO, \
+									__FILE__, __LINE__))).getStream()
+
+#define LOG_WARN melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::WARN, \
+									__FILE__, __LINE__))).getStream()
+
+#define LOG_ERROR melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::ERROR, \
+									__FILE__, __LINE__))).getStream()
+
+#define LOG_FATAL melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(1, melon::LogLevel::FATAL, \
+									__FILE__, __LINE__))).getStream()
 
 #endif
 

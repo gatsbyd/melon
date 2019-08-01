@@ -15,10 +15,10 @@ const char* LogLevelName[] {
 
 LogLevel g_logLevel = LogLevel::DEBUG;
 
-LogEvent::LogEvent(pid_t pid, LogLevel logLevel, 
+LogEvent::LogEvent(pid_t tid, LogLevel logLevel, 
 					const char* file_name,
 					int line) 
-	: pid_(pid), logLevel_(logLevel), 
+	: tid_(tid), logLevel_(logLevel), 
 		file_name_(file_name), line_(line) {
 }
 
@@ -34,6 +34,10 @@ LogWrapper::~LogWrapper() {
 	//todo: singleton
 	Logger log;
 	log.log(event_);
+	if (event_->logLevel_ == LogLevel::FATAL) {
+		//todo: flush asyncloging
+		abort();
+	}
 }
 
 std::ostream& LogWrapper::getStream() {
@@ -81,7 +85,7 @@ std::string LogAppender::format(LogEvent::ptr event) {
 	ss << "date" << " "
 		<< "time" << " "
 		<< "microsecond" << " "
-		<< event->pid_ << " "
+		<< event->tid_ << " "
 		<< LogLevelName[static_cast<int>(event->logLevel_)] << " "
 		<< event->content_.str() << " - "
 		<< event->file_name_ << ":"
