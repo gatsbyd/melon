@@ -9,7 +9,6 @@ using namespace melon;
 
 TEST(TestLog, BaseTest) {
 	melon::Logger::setLogLevel(melon::LogLevel::INFO);
-	Singleton<Logger>::getInstance();
 
 	LOG_DEBUG << "debug";
 	LOG_INFO << "info";
