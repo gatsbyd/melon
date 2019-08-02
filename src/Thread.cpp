@@ -25,6 +25,8 @@ Thread::Thread(Func cb, std::string name)
 		char buf[30];
 		snprintf(buf, sizeof buf, "Thread-%d", num);
 		name_ = buf;
+	} else {
+		name_ = name;
 	}
 }
 
@@ -52,6 +54,10 @@ void Thread::join() {
 		joined_ = false;
 		LOG_FATAL << "pthread_join failed";	
 	}
+}
+
+const std::string& Thread::getName() const {
+	return name_;
 }
 
 void* Thread::threadFuncInternal(void* arg) {

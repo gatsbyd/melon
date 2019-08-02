@@ -13,6 +13,7 @@ public:
 
 	void start();
 	void join();
+	const std::string& getName() const;
 	
 	static pid_t CurrentThreadTid();
 private:

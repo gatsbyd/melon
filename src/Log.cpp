@@ -31,7 +31,6 @@ LogWrapper::LogWrapper(LogEvent::ptr event)
 }
 
 LogWrapper::~LogWrapper() {
-	//todo: singleton
 	Singleton<Logger>::getInstance()->log(event_);
 	if (event_->logLevel_ == LogLevel::FATAL) {
 		//todo: flush asyncloging
