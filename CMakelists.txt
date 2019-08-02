@@ -4,18 +4,17 @@ project(ShinyVm CXX C)
 
 set(CXX_FLAGS
  -g
-# -Wall
-# -Wextra
+ -Wall
+ -Wextra
  -Werror
  -std=c++11
+ -pthread
 )
 
 # ---[ Flags
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 # ---[ Includes
-set(THIRD_PARTY_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/third_party)
-set(GMOCK_INCLUDE_DIR ${THIRD_PARTY_INCLUDE_DIR}/gmock)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${GMOCK_INCLUDE_DIR})
 

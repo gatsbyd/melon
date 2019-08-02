@@ -2,15 +2,15 @@
 #define _MELON_LOG_H_
 
 #include <memory>
-#include <Mutex.h>
 #include <string>
 #include <sstream>
 #include <sys/types.h>
-#include "Singleton.h"
 #include <time.h>
-#include "Thread.h"
 #include <vector>
 
+#include "Mutex.h"
+#include "Singleton.h"
+#include "Thread.h"
 
 namespace melon {
 

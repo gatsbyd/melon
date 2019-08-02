@@ -25,4 +25,5 @@ MutexGuard::MutexGuard(Mutex& mutex)
 MutexGuard::~MutexGuard() {
 	mutex_.unlock();
 }
+
 }

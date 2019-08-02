@@ -1,7 +1,7 @@
-#include "Log.h"
-
 #include <iostream>
 #include <sstream>
+
+#include "Log.h"
 
 namespace melon {
 
