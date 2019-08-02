@@ -1,4 +1,3 @@
-#include "gtest/gtest.h"
 #include "Thread.h"
 #include "Log.h"
 #include <sys/syscall.h>
@@ -11,7 +10,7 @@ void func() {
 	LOG_DEBUG << "in thread: " << Thread::CurrentThreadTid();
 }
 
-TEST(TestThread, BaseTest) {
+int main() {
 	Thread t1(func, "2222");
 	Thread t2(func);
 
@@ -23,4 +22,5 @@ TEST(TestThread, BaseTest) {
 	LOG_DEBUG << "in thread: " << Thread::CurrentThreadTid();
 	LOG_DEBUG << t1.getName();
 	LOG_DEBUG << t2.getName();
+	return 0;
 }
