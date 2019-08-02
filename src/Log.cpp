@@ -51,19 +51,20 @@ void Logger::setLogLevel(LogLevel logLevel) {
 }
 
 void Logger::log(LogEvent::ptr event) {
-	//todo: thread safe
+	//todo: swap?
+	MutexGuard guard(mutex_);
 	for (auto& appender : appenders_) {
 		appender->log(event);
 	}
 }
 
 void Logger::addAppender(LogAppender::ptr appender) {
-	//todo: thread safe
+	MutexGuard guard(mutex_);
 	appenders_.push_back(appender);
 }
 
 void Logger::delAppender(LogAppender::ptr appender) {
-	//todo: thread safe
+	MutexGuard guard(mutex_);
 	for (auto it = appenders_.begin();
 					it != appenders_.end(); ++it) {
 		if (*it == appender) {
@@ -74,7 +75,7 @@ void Logger::delAppender(LogAppender::ptr appender) {
 }
 
 void Logger::clearAppender() {
-	//todo: thread safe
+	MutexGuard guard(mutex_);
 	appenders_.clear();
 }
 

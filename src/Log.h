@@ -2,6 +2,7 @@
 #define _MELON_LOG_H_
 
 #include <memory>
+#include <Mutex.h>
 #include <string>
 #include <sstream>
 #include <sys/types.h>
@@ -84,6 +85,7 @@ public:
 	static LogLevel getLogLevel();
 
 private:
+	Mutex mutex_;
 	std::vector<LogAppender::ptr> appenders_;
 };
 
