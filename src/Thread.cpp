@@ -33,7 +33,6 @@ Thread::Thread(Func cb, std::string name)
 Thread::~Thread() {
 	if (started_ && !joined_) {
 		pthread_detach(tid_);
-		LOG_DEBUG << "pthread_detach: " << Thread::CurrentThreadTid();
 	}
 }
 

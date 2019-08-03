@@ -8,6 +8,7 @@
 namespace melon {
 //todo: uncopybale
 class Mutex : public Noncopyable {
+friend class Condition;
 public:
 	Mutex();
 	~Mutex();
@@ -15,6 +16,8 @@ public:
 	void lock();
 	void unlock();
 private:
+	pthread_mutex_t* getMutex();
+
 	pthread_mutex_t mutex_;
 };
 
