@@ -17,7 +17,7 @@ namespace melon {
 enum class LogLevel;
 	
 class LogEvent {
-friend class LogAppender;
+friend class Logger;
 friend class LogWrapper;
 
 public:
@@ -52,15 +52,21 @@ public:
 	typedef std::shared_ptr<LogAppender> ptr;
 
 	virtual ~LogAppender() {}
-	virtual void log(LogEvent::ptr event) = 0;
-protected:
-	virtual std::string format(LogEvent::ptr event);
+	virtual void append(std::string log) = 0;
 
 };
 
 class ConsoleAppender : public LogAppender {
 public:
-	void log(LogEvent::ptr event) override;
+	void append(std::string log) override;
+};
+
+class AsyncFileAppender : public LogAppender {
+public:
+	//void append(std::string log) override;
+
+private:
+	
 };
 
 
@@ -75,6 +81,7 @@ enum class LogLevel {
 class Logger {
 public:
 	Logger();
+	virtual ~Logger() {};
 
 	void log(LogEvent::ptr event);
 	void addAppender(LogAppender::ptr appender);
@@ -83,6 +90,9 @@ public:
 
 	static void setLogLevel(LogLevel logLevel);
 	static LogLevel getLogLevel();
+
+protected:
+	virtual std::string format(LogEvent::ptr event);
 
 private:
 	Mutex mutex_;

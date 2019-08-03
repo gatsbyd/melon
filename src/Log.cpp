@@ -50,11 +50,31 @@ void Logger::setLogLevel(LogLevel logLevel) {
 	g_logLevel = logLevel;
 }
 
+std::string Logger::format(LogEvent::ptr event) {
+	std::ostringstream ss;
+	char buf[50];
+	time_t time = event->time_;
+	struct tm tm;
+	localtime_r(&time, &tm);
+	strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S", &tm);
+
+	ss << buf << " "
+		<< event->tid_ << " "
+		<< LogLevelName[static_cast<int>(event->logLevel_)] << " "
+		<< event->content_.str() << " - "
+		<< event->file_name_ << ":"
+		<< event->line_ << std::endl;
+	return ss.str();
+}
+
 void Logger::log(LogEvent::ptr event) {
-	//todo: swap?
-	MutexGuard guard(mutex_);
-	for (auto& appender : appenders_) {
-		appender->log(event);
+
+	std::string log = format(event);
+	{
+		MutexGuard guard(mutex_);
+		for (auto& appender : appenders_) {
+			appender->append(log);
+		}
 	}
 }
 
@@ -79,25 +99,9 @@ void Logger::clearAppender() {
 	appenders_.clear();
 }
 
-std::string LogAppender::format(LogEvent::ptr event) {
-	std::ostringstream ss;
-	char buf[50];
-	time_t time = event->time_;
-	struct tm tm;
-	localtime_r(&time, &tm);
-	strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S", &tm);
 
-	ss << buf << " "
-		<< event->tid_ << " "
-		<< LogLevelName[static_cast<int>(event->logLevel_)] << " "
-		<< event->content_.str() << " - "
-		<< event->file_name_ << ":"
-		<< event->line_ << std::endl;
-	return ss.str();
-}
-
-void ConsoleAppender::log(LogEvent::ptr event) {
-	std::cout << format(event);
+void ConsoleAppender::append(std::string log) {
+	std::cout << log;
 }
 
 }
