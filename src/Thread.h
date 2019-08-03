@@ -1,11 +1,12 @@
 #ifndef _MELON_THREAD_H_
 #define _MELON_THREAD_H_
 
+#include "Noncopyable.h"
 #include <functional>
 
 namespace melon {
 
-class Thread {
+class Thread : public Noncopyable {
 public:
 	typedef std::function<void (void)> Func;
 	Thread(Func cb, std::string name = "");

@@ -3,9 +3,11 @@
 
 #include <pthread.h>
 
+#include "Noncopyable.h"
+
 namespace melon {
 //todo: uncopybale
-class Mutex {
+class Mutex : public Noncopyable {
 public:
 	Mutex();
 	~Mutex();
