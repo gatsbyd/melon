@@ -99,20 +99,20 @@ template class Singleton<Logger>;
 }
 
 #define LOG_DEBUG if (melon::Logger::getLogLevel() <= melon::LogLevel::DEBUG) \
-													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), Thread::CurrentThreadTid(), melon::LogLevel::DEBUG, \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::DEBUG, \
 									__FILE__, __LINE__))).getStream()
 
 #define LOG_INFO if (melon::Logger::getLogLevel() <= melon::LogLevel::INFO) \
-													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), Thread::CurrentThreadTid(), melon::LogLevel::INFO, \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::INFO, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_WARN melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), Thread::CurrentThreadTid(), melon::LogLevel::WARN, \
+#define LOG_WARN melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::WARN, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_ERROR melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), Thread::CurrentThreadTid(), melon::LogLevel::ERROR, \
+#define LOG_ERROR melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::ERROR, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_FATAL melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), Thread::CurrentThreadTid(), melon::LogLevel::FATAL, \
+#define LOG_FATAL melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::FATAL, \
 									__FILE__, __LINE__))).getStream()
 
 #endif
