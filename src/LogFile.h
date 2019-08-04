@@ -17,7 +17,10 @@ public:
 	void flush();
 
 private:
+	std::string getFileName();
+
 	std::string basename_;
+	FILE* fp_;
 };
 
 }
