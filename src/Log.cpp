@@ -103,7 +103,7 @@ void Logger::clearAppender() {
 }
 
 
-void ConsoleAppender::append(std::string log) {
+void ConsoleAppender::append(const std::string& log) {
 	std::cout << log;
 }
 
@@ -146,11 +146,13 @@ size_t Buffer::length() const {
 
 AsyncFileAppender::AsyncFileAppender(std::string basename, time_t persist_per_second) 
 	:started_(false), 
-		persist_per_second_(persist_per_second), 
-		basename_(basename),
-		cond_(mutex_) ,
-		persit_thread_(std::bind(&AsyncFileAppender::threadFunc, this)) {
-	cur_buffer_.reset(new Buffer());
+	running_(false),
+	persist_per_second_(persist_per_second), 
+	basename_(basename),
+	cond_(mutex_) ,
+	countdown_latch_(1),
+	persit_thread_(std::bind(&AsyncFileAppender::threadFunc, this)),
+		cur_buffer_(new Buffer()) {
 }
 
 AsyncFileAppender::~AsyncFileAppender() {
@@ -159,7 +161,7 @@ AsyncFileAppender::~AsyncFileAppender() {
 	}
 }
 
-void AsyncFileAppender::append(std::string log) {
+void AsyncFileAppender::append(const std::string& log) {
 	MutexGuard guard(mutex_);
 
 	if (cur_buffer_->available() >= log.size()) {
@@ -175,8 +177,9 @@ void AsyncFileAppender::append(std::string log) {
 
 void AsyncFileAppender::start() {
 	started_ = true;
+	running_ = true;
 	persit_thread_.start();
-	//todo: wait until persist thread start
+	countdown_latch_.wait();
 }
 
 void AsyncFileAppender::stop() {
@@ -190,8 +193,11 @@ void AsyncFileAppender::threadFunc() {
 	std::vector<std::unique_ptr<Buffer>> persist_buffers;
 	LogFile log_file(basename_);
 
-	while (started_) {
+	countdown_latch_.countDown();
+
+	while (running_) {
 		assert(buffer);
+		assert(buffer->length() == 0);
 		assert(persist_buffers.empty());
 
 		{
@@ -200,13 +206,19 @@ void AsyncFileAppender::threadFunc() {
 			if (buffers_.empty()) {
 				cond_.wait_seconds(persist_per_second_);
 			}
+			if (buffers_.empty() && cur_buffer_->length() == 0) {
+				continue;
+			}
+
 			buffers_.push_back(std::move(cur_buffer_));
 
 			//reset  cur_buffer_ and buffers_
 			persist_buffers.swap(buffers_);
 			cur_buffer_ = std::move(buffer);
+			cur_buffer_->clear();
 			assert(buffers_.empty());
-			assert(buffer);
+			assert(cur_buffer_);
+			assert(cur_buffer_->length() == 0);
 		}
 
 		//if log is too large, drop
@@ -223,11 +235,21 @@ void AsyncFileAppender::threadFunc() {
 		//reset buffer and persist_buffers
 		assert(persist_buffers.size() == 1);
 		buffer = std::move(persist_buffers[0]);
+		buffer->clear();
 		persist_buffers.clear();
 
 		log_file.flush();
+
+		if (!started_) {
+			MutexGuard guard(mutex_);
+			if (cur_buffer_->length() == 0) {
+				running_ = false;
+			}
+		}
 	}
 	log_file.flush();
+
+	std::cerr << "AsyncFileAppender flush complete" << std::endl;
 }
 
 }

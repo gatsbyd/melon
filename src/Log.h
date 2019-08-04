@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Condition.h"
+#include "CountDownLatch.h"
 #include "Mutex.h"
 #include "Singleton.h"
 #include "Thread.h"
@@ -53,18 +54,18 @@ public:
 	typedef std::shared_ptr<LogAppender> ptr;
 
 	virtual ~LogAppender() {}
-	virtual void append(std::string log) = 0;
+	virtual void append(const std::string& log) = 0;
 
 };
 
 class ConsoleAppender : public LogAppender {
 public:
-	void append(std::string log) override;
+	void append(const std::string& log) override;
 };
 
 class Buffer : public Noncopyable {
 public:
-	Buffer(size_t total = 1024 * 1024 * 30);
+	Buffer(size_t total = 1024 * 1024 * 100);
 	~Buffer();
 
 	void clear();
@@ -84,7 +85,7 @@ class AsyncFileAppender : public LogAppender {
 public:
 	AsyncFileAppender(std::string basename, time_t persist_per_second = 3);
 	~AsyncFileAppender();
-	void append(std::string log) override;
+	void append(const std::string& log) override;
 	void start();
 	void stop();
 
@@ -92,10 +93,12 @@ private:
 	void threadFunc();
 	
 	bool started_;
+	bool running_;
 	time_t persist_per_second_;
 	std::string basename_;
 	Mutex mutex_;
 	Condition cond_;
+	CountDownLatch countdown_latch_;
 	Thread persit_thread_;
 	std::unique_ptr<Buffer> cur_buffer_;
 	std::vector<std::unique_ptr<Buffer>> buffers_;

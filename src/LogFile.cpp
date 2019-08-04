@@ -1,4 +1,5 @@
 #include "LogFile.h"
+#include "Log.h"
 
 #include <stdio.h>
 
@@ -7,7 +8,7 @@ namespace melon {
 LogFile::LogFile(std::string basename) 
 	:basename_(basename) {
 	std::string file_name = getFileName();
-	fp_ = ::fopen(file_name.c_str(), "a");
+	fp_ = ::fopen(file_name.c_str(), "w");
 }
 
 LogFile::~LogFile() {
