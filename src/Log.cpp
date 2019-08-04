@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "Log.h"
+#include "LogFile.h"
 
 namespace melon {
 
@@ -143,9 +144,10 @@ size_t Buffer::length() const {
 	return cur_;
 }
 
-AsyncFileAppender::AsyncFileAppender(int persist_per_second) 
+AsyncFileAppender::AsyncFileAppender(std::string basename, time_t persist_per_second) 
 	:started_(false), 
 		persist_per_second_(persist_per_second), 
+		basename_(basename),
 		cond_(mutex_) ,
 		persit_thread_(std::bind(&AsyncFileAppender::threadFunc, this)) {
 	cur_buffer_.reset(new Buffer());
@@ -184,23 +186,27 @@ void AsyncFileAppender::stop() {
 }
 
 void AsyncFileAppender::threadFunc() {
-	std::unique_ptr<Buffer> buffer1(new Buffer());
+	std::unique_ptr<Buffer> buffer(new Buffer());
 	std::vector<std::unique_ptr<Buffer>> persist_buffers;
-	LogFile log_file;
+	LogFile log_file(basename_);
 
 	while (started_) {
-		assert(buffer1);
+		assert(buffer);
 		assert(persist_buffers.empty());
 
 		{
 			MutexGuard gurd(mutex_);
+			//wake up every persist_per_seconds_ or on Buffer is full
 			if (buffers_.empty()) {
-				cond_.wait();
+				cond_.wait_seconds(persist_per_second_);
 			}
 			buffers_.push_back(std::move(cur_buffer_));
 
+			//reset  cur_buffer_ and buffers_
 			persist_buffers.swap(buffers_);
-			cur_buffer_ = std::move(buffer1);
+			cur_buffer_ = std::move(buffer);
+			assert(buffers_.empty());
+			assert(buffer);
 		}
 
 		//if log is too large, drop
@@ -211,12 +217,12 @@ void AsyncFileAppender::threadFunc() {
 
 		//persist log
 		for (auto& buffer : persist_buffers) {
-			log_file.persit(buffer->data(), buffer->length());
+			log_file.persist(buffer->data(), buffer->length());
 		}
 
-		//reset buffer1
+		//reset buffer and persist_buffers
 		assert(persist_buffers.size() == 1);
-		buffer1 = std::move(persist_buffers[0]);
+		buffer = std::move(persist_buffers[0]);
 		persist_buffers.clear();
 
 		log_file.flush();

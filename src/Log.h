@@ -82,7 +82,7 @@ private:
 
 class AsyncFileAppender : public LogAppender {
 public:
-	AsyncFileAppender(int persist_per_second = 3);
+	AsyncFileAppender(std::string basename, time_t persist_per_second = 3);
 	~AsyncFileAppender();
 	void append(std::string log) override;
 	void start();
@@ -92,7 +92,8 @@ private:
 	void threadFunc();
 	
 	bool started_;
-	int persist_per_second_;
+	time_t persist_per_second_;
+	std::string basename_;
 	Mutex mutex_;
 	Condition cond_;
 	Thread persit_thread_;
