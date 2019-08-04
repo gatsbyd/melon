@@ -15,6 +15,13 @@ void Condition::wait() {
 	pthread_cond_wait(&cond_, mutex_.getMutex());
 }
 
+void Condition::wait_seconds(time_t seconds) {
+	struct timespec timespec;
+	timespec.tv_sec = seconds;
+	timespec.tv_nsec = 0;
+	pthread_cond_timedwait(&cond_, mutex_.getMutex(), &timespec);
+}
+
 void Condition::notify() {
 	pthread_cond_signal(&cond_);
 }
