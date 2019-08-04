@@ -111,7 +111,7 @@ Buffer::Buffer(size_t total)
 	data_ = new char[total];
 	if (!data_) {
 		//todo: retry
-		LOG_FATAL << "no space to allocate";
+		//LOG_FATAL << "no space to allocate";
 	}
 }
 
@@ -119,7 +119,7 @@ Buffer::~Buffer() {
 	delete[] data_;
 }
 
-size_t Buffer::available() {
+size_t Buffer::available() const {
 	return available_;
 }
 
@@ -133,6 +133,95 @@ void Buffer::append(const char* data, size_t len) {
 	memcpy(data_ + cur_, data, len);
 	cur_ += len;
 	available_ -= len;
+}
+
+const char* Buffer::data() const {
+	return data_;
+}
+
+size_t Buffer::length() const {
+	return cur_;
+}
+
+AsyncFileAppender::AsyncFileAppender(int persist_per_second) 
+	:started_(false), 
+		persist_per_second_(persist_per_second), 
+		cond_(mutex_) ,
+		persit_thread_(std::bind(&AsyncFileAppender::threadFunc, this)) {
+	cur_buffer_.reset(new Buffer());
+}
+
+AsyncFileAppender::~AsyncFileAppender() {
+	if (started_) {
+		stop();	
+	}
+}
+
+void AsyncFileAppender::append(std::string log) {
+	MutexGuard guard(mutex_);
+
+	if (cur_buffer_->available() >= log.size()) {
+		cur_buffer_->append(log.c_str(), log.size());
+	} else {
+		buffers_.push_back(std::move(cur_buffer_));
+
+		cur_buffer_.reset(new Buffer());
+		cur_buffer_->append(log.c_str(), log.size());
+		cond_.notify();
+	}
+}
+
+void AsyncFileAppender::start() {
+	started_ = true;
+	persit_thread_.start();
+	//todo: wait until persist thread start
+}
+
+void AsyncFileAppender::stop() {
+	started_ = false;
+	cond_.notify();
+	persit_thread_.join();
+}
+
+void AsyncFileAppender::threadFunc() {
+	std::unique_ptr<Buffer> buffer1(new Buffer());
+	std::vector<std::unique_ptr<Buffer>> persist_buffers;
+	LogFile log_file;
+
+	while (started_) {
+		assert(buffer1);
+		assert(persist_buffers.empty());
+
+		{
+			MutexGuard gurd(mutex_);
+			if (buffers_.empty()) {
+				cond_.wait();
+			}
+			buffers_.push_back(std::move(cur_buffer_));
+
+			persist_buffers.swap(buffers_);
+			cur_buffer_ = std::move(buffer1);
+		}
+
+		//if log is too large, drop
+		if (persist_buffers.size() > 1) {
+			std::cerr << "log is too large, drop some" << std::endl;
+			persist_buffers.erase(persist_buffers.begin() + 1, persist_buffers.end());
+		}
+
+		//persist log
+		for (auto& buffer : persist_buffers) {
+			log_file.persit(buffer->data(), buffer->length());
+		}
+
+		//reset buffer1
+		assert(persist_buffers.size() == 1);
+		buffer1 = std::move(persist_buffers[0]);
+		persist_buffers.clear();
+
+		log_file.flush();
+	}
+	log_file.flush();
 }
 
 }

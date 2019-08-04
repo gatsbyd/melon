@@ -8,6 +8,7 @@
 #include <time.h>
 #include <vector>
 
+#include "Condition.h"
 #include "Mutex.h"
 #include "Singleton.h"
 #include "Thread.h"
@@ -66,28 +67,38 @@ public:
 	Buffer(size_t total = 1024 * 1024 * 30);
 	~Buffer();
 
-	size_t available();
 	void clear();
 	void append(const char* data, size_t len);
+	const char* data() const;
+	size_t length() const;
+	size_t available() const;
 
 private:
 	char* data_;
 	const size_t total_;
 	size_t available_;
 	size_t cur_;
-}
+};
 
 class AsyncFileAppender : public LogAppender {
 public:
-	AsyncFileAppender();
+	AsyncFileAppender(int persist_per_second = 3);
+	~AsyncFileAppender();
 	void append(std::string log) override;
+	void start();
+	void stop();
 
 private:
 	void threadFunc();
-
+	
+	bool started_;
+	int persist_per_second_;
+	Mutex mutex_;
+	Condition cond_;
+	Thread persit_thread_;
+	std::unique_ptr<Buffer> cur_buffer_;
+	std::vector<std::unique_ptr<Buffer>> buffers_;
 };
-
-;
 
 enum class LogLevel {
 	DEBUG,
