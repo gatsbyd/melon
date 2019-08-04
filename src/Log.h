@@ -61,14 +61,33 @@ public:
 	void append(std::string log) override;
 };
 
-class AsyncFileAppender : public LogAppender {
+class Buffer : public Noncopyable {
 public:
-	//void append(std::string log) override;
+	Buffer(size_t total = 1024 * 1024 * 30);
+	~Buffer();
+
+	size_t available();
+	void clear();
+	void append(const char* data, size_t len);
 
 private:
-	
+	char* data_;
+	const size_t total_;
+	size_t available_;
+	size_t cur_;
+}
+
+class AsyncFileAppender : public LogAppender {
+public:
+	AsyncFileAppender();
+	void append(std::string log) override;
+
+private:
+	void threadFunc();
+
 };
 
+;
 
 enum class LogLevel {
 	DEBUG,

@@ -1,5 +1,7 @@
+#include <assert.h>
 #include <iostream>
 #include <sstream>
+#include <string.h>
 
 #include "Log.h"
 
@@ -102,6 +104,35 @@ void Logger::clearAppender() {
 
 void ConsoleAppender::append(std::string log) {
 	std::cout << log;
+}
+
+Buffer::Buffer(size_t total) 
+	:total_(total), available_(total), cur_(0) {
+	data_ = new char[total];
+	if (!data_) {
+		//todo: retry
+		LOG_FATAL << "no space to allocate";
+	}
+}
+
+Buffer::~Buffer() {
+	delete[] data_;
+}
+
+size_t Buffer::available() {
+	return available_;
+}
+
+void Buffer::clear() {
+	cur_ = 0;
+	available_ = total_;
+}
+
+void Buffer::append(const char* data, size_t len) {
+	assert(available_ >= len);
+	memcpy(data_ + cur_, data, len);
+	cur_ += len;
+	available_ -= len;
 }
 
 }
