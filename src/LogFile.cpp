@@ -2,6 +2,7 @@
 #include "Log.h"
 
 #include <stdio.h>
+#include <iostream>
 
 namespace melon {
 

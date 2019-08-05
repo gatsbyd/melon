@@ -2,27 +2,29 @@
 #define _MELON_SINGLETON_H_
 
 #include <pthread.h>
+#include <memory>
+#include <iostream>
 
 namespace melon {
 
 template <typename T>
 class Singleton {
 public:
-	static T* getInstance() {
+	static std::shared_ptr<T> getInstance() {
 		pthread_once(&once_control, [&](){
-							value_ = new T();
+							value_ = std::make_shared<T>();	
 						});
 		return value_;
 	}
 	static void destroy() {
-		delete value_;
+		value_.reset();
 	}
 
 private:
 	Singleton();
 	~Singleton();
 
-	static T* value_;
+	static std::shared_ptr<T> value_;
 	static pthread_once_t once_control;
 };
 
@@ -30,7 +32,7 @@ template <typename T>
 pthread_once_t Singleton<T>::once_control = PTHREAD_ONCE_INIT;
 
 template <typename T>
-T* Singleton<T>::value_ = nullptr;
+std::shared_ptr<T> Singleton<T>::value_;
 
 }
 

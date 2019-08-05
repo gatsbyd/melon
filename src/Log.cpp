@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <unistd.h>
 
 #include "Log.h"
 #include "LogFile.h"
@@ -37,6 +38,7 @@ LogWrapper::~LogWrapper() {
 	Singleton<Logger>::getInstance()->log(event_);
 	if (event_->logLevel_ == LogLevel::FATAL) {
 		//todo: flush asyncloging
+		sleep(10);
 		abort();
 	}
 }
@@ -209,6 +211,7 @@ void AsyncFileAppender::threadFunc() {
 			persist_buffers.swap(buffers_);
 			cur_buffer_ = std::move(buffer);
 			cur_buffer_->clear();
+
 			assert(buffers_.empty());
 			assert(cur_buffer_);
 			assert(cur_buffer_->length() == 0);
