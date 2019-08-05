@@ -2,6 +2,7 @@
 #define _MELON_LOG_H_
 
 #include <memory>
+#include <map>
 #include <string>
 #include <sstream>
 #include <sys/types.h>
@@ -118,8 +119,8 @@ public:
 	virtual ~Logger() {};
 
 	void log(LogEvent::ptr event);
-	void addAppender(LogAppender::ptr appender);
-	void delAppender(LogAppender::ptr appender);
+	void addAppender(const std::string name, LogAppender::ptr appender);
+	void delAppender(const std::string name);
 	void clearAppender();
 
 	static void setLogLevel(LogLevel logLevel);
@@ -130,7 +131,7 @@ protected:
 
 private:
 	Mutex mutex_;
-	std::vector<LogAppender::ptr> appenders_;
+	std::map<std::string, LogAppender::ptr> appenders_;
 };
 
 extern LogLevel g_logLevel;

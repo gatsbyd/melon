@@ -3,3 +3,4 @@ CMakeFiles/
 *.cmake
 Makefile
 .ycm_extra_conf.py
+.swp

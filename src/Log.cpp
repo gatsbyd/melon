@@ -46,7 +46,6 @@ std::ostream& LogWrapper::getStream() {
 }
 
 Logger::Logger() {
-	addAppender(LogAppender::ptr(new ConsoleAppender()));
 }
 
 void Logger::setLogLevel(LogLevel logLevel) {
@@ -75,26 +74,20 @@ void Logger::log(LogEvent::ptr event) {
 	std::string log = format(event);
 	{
 		MutexGuard guard(mutex_);
-		for (auto& appender : appenders_) {
-			appender->append(log);
+		for (auto& pair : appenders_) {
+			pair.second->append(log);
 		}
 	}
 }
 
-void Logger::addAppender(LogAppender::ptr appender) {
+void Logger::addAppender(const std::string name, LogAppender::ptr appender) {
 	MutexGuard guard(mutex_);
-	appenders_.push_back(appender);
+	appenders_.insert(std::make_pair(name, appender));
 }
 
-void Logger::delAppender(LogAppender::ptr appender) {
+void Logger::delAppender(const std::string name) {
 	MutexGuard guard(mutex_);
-	for (auto it = appenders_.begin();
-					it != appenders_.end(); ++it) {
-		if (*it == appender) {
-			appenders_.erase(it);
-			break;
-		}
-	}
+	appenders_.erase(name);
 }
 
 void Logger::clearAppender() {
