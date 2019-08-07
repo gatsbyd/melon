@@ -15,15 +15,16 @@ public:
 	//todo:
 	void start() {
 		//todo:将监听描述符加到scheduler中
-		accept_scheduler_.run();
+		accept_scheduler_->run();
 	}
 
 private:
 	std::string ip_;
 	int port_;
 	int thread_num_;
-	CoroutineScheduler accept_scheduler_;
+	CoroutineScheduler* accept_scheduler_;
 	std::vector<CoroutineScheduler*> connect_scheduler_;
+	
 };
 
 }
