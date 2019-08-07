@@ -7,8 +7,8 @@
 
 namespace melon {
 
-std::atomic_int threadCount(0);
-__thread pid_t t_tid = 0;
+std::atomic<int> threadCount(0);
+static __thread pid_t t_tid = 0;
 
 pid_t Thread::CurrentThreadTid() {
 	if (t_tid == 0) {
