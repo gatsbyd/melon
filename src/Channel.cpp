@@ -48,5 +48,24 @@ void Channel::handleEvent() {
 	}
 }
 
+void Channel::setRevents(int revents) {
+	revents_ = revents;
+}
+
+void Channel::setIndex(int index) {
+	index_ = index;
+}
+
+int Channel::index() {
+	return index_;
+}
+
+int Channel::fd() {
+	return fd_;
+}
+
+int Channel::events() {
+	return events_;
+}
 
 }
