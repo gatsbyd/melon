@@ -59,7 +59,9 @@ Coroutine::~Coroutine() {
 
 //挂起当前正在执行的协程，切换到主协程执行，必须在非主协程调用
 void Coroutine::Yield() {
-	assert(s_cur_coroutine != s_main_coroutine);
+	if (s_cur_coroutine == s_main_coroutine) {
+		return;
+	}
 
 	Coroutine::Ptr old_coroutine = s_cur_coroutine;
 	s_cur_coroutine = s_main_coroutine;
@@ -73,7 +75,7 @@ void Coroutine::Yield() {
 void Coroutine::resume() {
 	EnsureMainCoroutine();
 	assert(s_cur_coroutine == s_main_coroutine);
-	
+	;
 	s_cur_coroutine = shared_from_this();
 	if (swapcontext(&(s_main_coroutine->context_), &(s_cur_coroutine->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
@@ -94,6 +96,9 @@ void Coroutine::RunInCoroutine() {
 	} catch (...) {
 		//todo:
 	}
+
+	//重新返回主协程
+	Coroutine::Yield();
 }
 
 void Coroutine::EnsureMainCoroutine() {
