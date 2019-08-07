@@ -1,11 +1,16 @@
 #include "Coroutine.h"
 #include "Log.h"
 
+#include <vector>
+
 using namespace melon;
+
+static int sum = 0;
 
 void test() {
 	LOG_DEBUG << "in Coroutine(" << Coroutine::GetCid() << ")";
 	Coroutine::Yield();
+	sum++;
 	LOG_DEBUG << "in Coroutine(" << Coroutine::GetCid() << ")";
 	Coroutine::Yield();
 }
@@ -13,12 +18,24 @@ void test() {
 int main() {
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
-	Coroutine::Ptr c1 = std::make_shared<Coroutine>(test);
+	const int sz = 100000;
+	std::vector<Coroutine::Ptr> coroutines;
+	for (int i = 0; i < sz; ++i) {
+		coroutines.push_back(std::make_shared<Coroutine>(test));
+	}
 
-	c1->resume();
-	LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
-	c1->resume();
-	LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
+	for (int i = 0; i < sz; ++i) {
+		coroutines[i]->resume();
+		LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
+	}
+	for (int i = 0; i < sz; ++i) {
+		coroutines[i]->resume();
+		LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
+	}
+
+	LOG_DEBUG << "all coroutine terminated, " << "sum= " << sum;
+
+	getchar();
 
 	return 0;
 }
