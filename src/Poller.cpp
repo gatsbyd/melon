@@ -3,8 +3,9 @@
 #include "Coroutine.h"
 #include "Log.h"
 
-#include <string.h>
 #include <error.h>
+#include <assert.h>
+#include <string.h>
 
 namespace melon {
 
@@ -21,11 +22,12 @@ void PollPoller::updateChannel(Channel* channel) {
 		pollfds_.push_back(pfd);
 		int index = static_cast<int>(pollfds_.size()) - 1;
 		channel->setIndex(index);
+		fd_to_channel_.insert(std::pair<int, Channel*>(channel->fd(), channel));
 	} else {
 		int index = channel->index();
 		pollfds_[index].events = static_cast<short int>(channel->events());
 		pollfds_[index].revents = 0;
-	}	
+	}
 }
 	
 void PollPoller::poll(int timeout) {
@@ -42,6 +44,7 @@ void PollPoller::poll(int timeout) {
 				if (pollfd.revents > 0) {
 					--num;
 					Channel* channel = fd_to_channel_[pollfd.fd];
+					assert(channel != nullptr);
 					channel->setRevents(pollfd.revents);
 					channel->handleEvent();
 				}	

@@ -5,7 +5,7 @@ namespace melon {
 
 static __thread CoroutineScheduler* t_scheduleInThisThread = nullptr;
 
-const int kPollTimeMs = 10000;
+const int kPollTimeMs = -10000;
 
 CoroutineScheduler::CoroutineScheduler()
 	:started_(false),
@@ -31,7 +31,7 @@ void CoroutineScheduler::run() {
 		{
 			//没有协程时执行poll协程
 			if (coroutines_.empty()) {
-				LOG_DEBUG << "no coroutine";
+				LOG_DEBUG << "execute poll coroutine";
 				cur = poll_coroutine;
 			} else {
 				for (auto it = coroutines_.begin();
