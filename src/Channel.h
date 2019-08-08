@@ -2,6 +2,7 @@
 #define _MELON_CHANNEL_H_
 
 #include <functional>
+#include <memory>
 
 namespace melon {
 
@@ -10,6 +11,7 @@ class CoroutineScheduler;
 class Channel {
 public:
 	typedef std::function<void ()> EventCallback;
+
 	Channel(int fd, CoroutineScheduler* sheduler);
 
 	void setReadCallback(EventCallback read_cb);

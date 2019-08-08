@@ -4,6 +4,7 @@
 
 #include <sys/timerfd.h>
 #include <strings.h>
+#include <unistd.h>
 
 using namespace melon;
 
@@ -15,8 +16,13 @@ int main() {
 	int timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 	Channel timefdChannel(timerfd, &scheduler);
 	timefdChannel.setReadCallback([&](){
-						LOG_DEBUG << "timeout!";			
-						scheduler.stop();
+						LOG_DEBUG << "timeout!";
+						uint64_t expired;
+						read(timerfd, &expired, sizeof expired);
+
+						scheduler.schedule([](){
+								LOG_DEBUG << "run new coroutine " << Coroutine::GetCid();
+							});
 					});
 	timefdChannel.enableReading();
 	struct itimerspec timespec;
@@ -27,5 +33,6 @@ int main() {
 	scheduler.start();
 	scheduler.run();
 
+	::close(timerfd);
 	return 0;
 }
