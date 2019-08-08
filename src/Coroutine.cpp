@@ -13,8 +13,6 @@ static std::atomic<uint64_t> s_coroutine_id {0};
 static thread_local Coroutine::Ptr s_cur_coroutine;
 static thread_local Coroutine::Ptr s_main_coroutine;
 
-void test() {}
-
 Coroutine::Coroutine(Func cb, uint32_t stack_size)
 	:c_id_(++s_coroutine_id), 
 	cb_(std::move(cb)),
@@ -75,7 +73,11 @@ void Coroutine::Yield() {
 void Coroutine::resume() {
 	EnsureMainCoroutine();
 	assert(s_cur_coroutine == s_main_coroutine);
-	;
+
+	if (state_ == CoroutineState::TERMINATED) {
+		LOG_DEBUG << "resume a terminated coroutine " << c_id_;
+		return;
+	}
 	s_cur_coroutine = shared_from_this();
 	if (swapcontext(&(s_main_coroutine->context_), &(s_cur_coroutine->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno

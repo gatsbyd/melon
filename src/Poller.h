@@ -1,18 +1,22 @@
 #ifndef _MELON_POLLER_H_
 #define _MELON_POLLER_H_
 
-#include "Channel.h"
 #include "Noncopyable.h"
 
 #include <map>
+#include <memory>
 #include <vector>
 #include <poll.h>
 
 namespace melon {
 
+class Channel;
+
 class Poller : public Noncopyable {
 public:
-	Poller();
+	typedef std::shared_ptr<Poller> Ptr;
+
+	Poller() = default;
 	virtual ~Poller() {};
 	virtual void updateChannel(Channel* channel) = 0;
 

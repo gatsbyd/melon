@@ -1,4 +1,5 @@
 #include "Channel.h"
+#include "CoroutineScheduler.h"
 #include "Log.h"
 
 #include <poll.h>
@@ -13,6 +14,7 @@ Channel::Channel(int fd, CoroutineScheduler* scheduler)
 	:fd_(fd),
 	events_(kNoneEvent),
 	revents_(kNoneEvent),
+	index_(-1),
 	scheduler_(scheduler) {
 
 }

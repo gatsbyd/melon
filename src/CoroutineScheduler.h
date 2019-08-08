@@ -4,6 +4,7 @@
 #include "Coroutine.h"
 #include "Mutex.h"
 #include "Noncopyable.h"
+#include "Poller.h"
 
 #include <list>
 
@@ -18,10 +19,12 @@ public:
 	void start();
 	void stop();
 	void schedule(Coroutine::Ptr coroutine);
+	void updateChannel(Channel* channel);
 
 private:
 	bool started_;
 	Mutex mutex_;
+	Poller::Ptr poller_;
 	std::list<Coroutine::Ptr> coroutines_;
 };
 

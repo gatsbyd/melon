@@ -1,9 +1,11 @@
 #ifndef _MELON_CHANNEL_H_
 #define _MELON_CHANNEL_H_
 
-#include "CoroutineScheduler.h"
+#include <functional>
 
 namespace melon {
+
+class CoroutineScheduler;
 
 class Channel {
 public:
