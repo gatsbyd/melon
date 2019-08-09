@@ -34,6 +34,7 @@ public:
 	//执行当前协程
 	void resume();
 	static uint64_t GetCid();
+	static Coroutine::Ptr GetCurrentCoroutine();
 	
 private:
 	static void RunInCoroutine();

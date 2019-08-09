@@ -23,6 +23,8 @@ public:
 	void schedule(Coroutine::Func func);
 	void updateChannel(Channel* channel);
 
+	static CoroutineScheduler* GetSchedulerOfThisThread();
+
 private:
 	void wakeupPollCoroutine();
 	void comsumeWakeEvent();

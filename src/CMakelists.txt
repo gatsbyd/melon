@@ -4,4 +4,5 @@
 
 file(GLOB_RECURSE srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_library(lib STATIC ${srcs})
+add_library(melon STATIC ${srcs})
+target_link_libraries(melon ${CMAKE_DL_LIBS})

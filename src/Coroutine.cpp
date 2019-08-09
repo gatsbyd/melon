@@ -110,4 +110,8 @@ void Coroutine::EnsureMainCoroutine() {
 	}
 }
 
+Coroutine::Ptr Coroutine::GetCurrentCoroutine() {
+	return s_cur_coroutine;
+}
+
 }

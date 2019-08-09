@@ -113,4 +113,8 @@ void CoroutineScheduler::comsumeWakeEvent() {
 	}
 }
 
+CoroutineScheduler* CoroutineScheduler::GetSchedulerOfThisThread() {
+	return t_scheduleInThisThread;
+}
+
 }
