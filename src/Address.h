@@ -15,7 +15,8 @@ public:
 	//default dtor, copy ctor, assign operation is ok
 	
 	std::string toString() const;
-	const struct sockaddr_in* getSockAddr() const;
+	const struct sockaddr* getSockAddr() const;
+	struct sockaddr* getSockAddr();
 
 private:
 	struct sockaddr_in addr_;

@@ -41,7 +41,14 @@ std::string IpAddress::toString() const {
 	return "todo";
 }
 
-const struct sockaddr_in* IpAddress::getSockAddr() const {
-	return &addr_;
+const struct sockaddr* IpAddress::getSockAddr() const {
+	const void* void_ptr = static_cast<const void*>(&addr_);
+	return static_cast<const struct sockaddr*>(void_ptr);
 }
+
+struct sockaddr* IpAddress::getSockAddr() {
+	void* void_ptr = static_cast<void*>(&addr_);
+	return static_cast<struct sockaddr*>(void_ptr);
+}
+
 }
