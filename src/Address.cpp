@@ -36,9 +36,12 @@ IpAddress::IpAddress(const struct sockaddr_in& addr)
 }
 
 	
-std::string IpAddress::toString() {
+std::string IpAddress::toString() const {
 	//todo
 	return "todo";
 }
 
+const struct sockaddr_in* IpAddress::getSockAddr() const {
+	return &addr_;
+}
 }
