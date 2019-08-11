@@ -2,7 +2,7 @@
 #define _MELON_POLLER_H_
 
 #include "Noncopyable.h"
-#include "Channel.h"
+#include "Coroutine.h"
 
 #include <map>
 #include <memory>
@@ -16,10 +16,13 @@ class CoroutineScheduler;
 class Poller : public Noncopyable {
 public:
 	typedef std::shared_ptr<Poller> Ptr;
+	static const int kNoneEvent;
+	static const int kReadEvent;
+	static const int kWriteEvent;
 
 	Poller() = default;
 	virtual ~Poller() {};
-	virtual void updateEvent(PollEvent::Ptr event) = 0;
+	virtual void updateEvent(int fd, int events, Coroutine::Ptr coroutine) = 0;
 	virtual void removeEvent(int fd) = 0;
 
 	virtual void poll(int timeout) = 0;
@@ -29,7 +32,7 @@ class PollPoller : public Poller {
 public:
 	PollPoller(CoroutineScheduler* scheduler);
 
-	void updateEvent(PollEvent::Ptr event) override;
+	void updateEvent(int fd, int events, Coroutine::Ptr coroutine) override;
 	void removeEvent(int fd) override;
 
 	void poll(int timeout) override;

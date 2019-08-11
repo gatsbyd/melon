@@ -1,9 +1,9 @@
 #include "Coroutine.h"
 #include "CoroutineScheduler.h"
-#include "Channel.h"
 #include "Hook.h"
 #include "Log.h"
 
+#include "assert.h"
 #include <dlfcn.h>
 #include <errno.h>
 #include <memory>
@@ -40,12 +40,13 @@ retry:
 		if (!scheduler) {
 			LOG_FATAL << "call hooked api in non io thread";
 		}
-		//scheduler->schedule(melon::Coroutine::GetCurrentCoroutine());
+
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		PollEvent::Ptr event = std::make_shared<PollEvent>(fd, melon::Coroutine::GetCurrentCoroutine());
-		scheduler->updateEvent(event);
+		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
+		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
 		//清除事件
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
 		
 		goto retry;
 	}
@@ -65,8 +66,14 @@ retry:
 		if (!scheduler) {
 			LOG_FATAL << "call hooked api in non io thread";
 		}
-		scheduler->schedule(melon::Coroutine::GetCurrentCoroutine());
+
+		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
+		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
+		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
+		//清除事件
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
+
 		goto retry;
 	}
 
@@ -85,8 +92,14 @@ retry:
 		if (!scheduler) {
 			LOG_FATAL << "call hooked api in non io thread";
 		}
-		scheduler->schedule(melon::Coroutine::GetCurrentCoroutine());
+
+		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
+		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
+		scheduler->updateEvent(fd, melon::Poller::kWriteEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
+		//清除事件
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
+
 		goto retry;
 	}
 

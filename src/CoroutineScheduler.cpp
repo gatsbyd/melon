@@ -81,8 +81,8 @@ void CoroutineScheduler::schedule(Coroutine::Func func) {
 	coroutines_.push_back(std::make_shared<Coroutine>(std::move(func)));
 }
 
-void CoroutineScheduler::updateEvent(PollEvent::Ptr event) {
-	poller_.updateEvent(event);
+void CoroutineScheduler::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
+	poller_.updateEvent(fd, events, coroutine);
 }
 	
 void CoroutineScheduler::removeEvent(int fd) {

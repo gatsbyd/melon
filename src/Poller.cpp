@@ -1,6 +1,4 @@
 #include "Poller.h"
-#include "Channel.h"
-#include "Coroutine.h"
 #include "CoroutineScheduler.h"
 #include "Log.h"
 
@@ -10,26 +8,29 @@
 
 namespace melon {
 
+const int Poller::kNoneEvent = 0;
+const int Poller::kReadEvent = POLL_IN | POLL_PRI;
+const int Poller::kWriteEvent = POLL_OUT;
+
 PollPoller::PollPoller(CoroutineScheduler* scheduler)
 	:scheduler_(scheduler) {
-
 }	
 
-void PollPoller::updateEvent(PollEvent::Ptr event) {
-	auto it = fd_to_index_.find(event->fd());
+void PollPoller::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
+	auto it = fd_to_index_.find(fd);
 	if (it == fd_to_index_.end()) {
 		struct pollfd pfd;
-		pfd.fd = event->fd();
-		pfd.events = event->events();
+		pfd.fd = fd;
+		pfd.events = events;
 		pfd.revents = 0;
 		pollfds_.push_back(pfd);
-		fd_to_index_[event->fd()] = pollfds_.size() - 1;
-		fd_to_coroutine_[event->fd()] = event->coroutine();
+		fd_to_index_[fd] = pollfds_.size() - 1;
+		fd_to_coroutine_[fd] = coroutine;
 	} else {
 		int index = it->second;
-		pollfds_[index].events = event->events();
+		pollfds_[index].events = events;
 		pollfds_[index].revents = 0;
-		fd_to_coroutine_[event->fd()] = event->coroutine();
+		fd_to_coroutine_[fd] = coroutine;
 	}
 }
 	

@@ -2,7 +2,6 @@
 #define _MELON_COROUTINE_SCHEDULER_H_
 
 #include "Coroutine.h"
-#include "Channel.h"
 #include "Mutex.h"
 #include "Noncopyable.h"
 #include "Poller.h"
@@ -23,7 +22,7 @@ public:
 	void stop();
 	void schedule(Coroutine::Ptr coroutine);
 	void schedule(Coroutine::Func func);
-	void updateEvent(PollEvent::Ptr event);
+	void updateEvent(int fd, int events, Coroutine::Ptr coroutine);
 	void removeEvent(int fd);
 
 	static CoroutineScheduler* GetSchedulerOfThisThread();
