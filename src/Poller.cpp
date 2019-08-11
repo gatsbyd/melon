@@ -1,6 +1,7 @@
 #include "Poller.h"
 #include "Channel.h"
 #include "Coroutine.h"
+#include "CoroutineScheduler.h"
 #include "Log.h"
 
 #include <error.h>
@@ -9,27 +10,41 @@
 
 namespace melon {
 
-PollPoller::PollPoller() {
+PollPoller::PollPoller(CoroutineScheduler* scheduler)
+	:scheduler_(scheduler) {
 
-}
-	
-void PollPoller::updateChannel(Channel* channel) {
-	if (channel->index() < 0) {
+}	
+
+void PollPoller::updateEvent(PollEvent::Ptr event) {
+	auto it = fd_to_index_.find(event->fd());
+	if (it == fd_to_index_.end()) {
 		struct pollfd pfd;
-		pfd.fd = channel->fd();
-		pfd.events = static_cast<short int>(channel->events());
+		pfd.fd = event->fd();
+		pfd.events = event->events();
 		pfd.revents = 0;
 		pollfds_.push_back(pfd);
-		int index = static_cast<int>(pollfds_.size()) - 1;
-		channel->setIndex(index);
-		fd_to_channel_.insert(std::pair<int, Channel*>(channel->fd(), channel));
+		fd_to_index_[event->fd()] = pollfds_.size() - 1;
+		fd_to_coroutine_[event->fd()] = event->coroutine();
 	} else {
-		int index = channel->index();
-		pollfds_[index].events = static_cast<short int>(channel->events());
+		int index = it->second;
+		pollfds_[index].events = event->events();
 		pollfds_[index].revents = 0;
+		fd_to_coroutine_[event->fd()] = event->coroutine();
 	}
 }
 	
+void PollPoller::removeEvent(int fd) {
+	auto it = fd_to_index_.find(fd);
+	if (it == fd_to_index_.end()) {
+		return;
+	}
+	int index = it->second;
+	fd_to_coroutine_.erase(fd);
+	fd_to_index_.erase(fd);
+	//todo:可以优化
+	pollfds_.erase(pollfds_.begin() + index);
+}
+
 void PollPoller::poll(int timeout) {
 	while (true) {
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
@@ -43,10 +58,7 @@ void PollPoller::poll(int timeout) {
 			for (auto& pollfd : pollfds_) {
 				if (pollfd.revents > 0) {
 					--num;
-					Channel* channel = fd_to_channel_[pollfd.fd];
-					assert(channel != nullptr);
-					channel->setRevents(pollfd.revents);
-					channel->handleEvent();
+					scheduler_->schedule(fd_to_coroutine_[pollfd.fd]);
 				}	
 
 				if (num == 0) {

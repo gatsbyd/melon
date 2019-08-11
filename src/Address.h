@@ -9,7 +9,7 @@ namespace melon {
 class IpAddress {
 public:
 	IpAddress(std::string ip, in_port_t port);
-	explicit IpAddress(in_port_t port);
+	explicit IpAddress(in_port_t port = 0);
 	explicit IpAddress(const struct sockaddr_in& addr);
 
 	//default dtor, copy ctor, assign operation is ok

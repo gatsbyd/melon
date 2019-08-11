@@ -1,6 +1,8 @@
 #ifndef _MELON_CHANNEL_H_
 #define _MELON_CHANNEL_H_
 
+#include "Coroutine.h"
+
 #include <functional>
 #include <memory>
 
@@ -8,22 +10,18 @@ namespace melon {
 
 class CoroutineScheduler;
 
-class Channel {
+class PollEvent {
 public:
-	typedef std::function<void ()> EventCallback;
+	typedef std::shared_ptr<PollEvent> Ptr;
+	PollEvent(int fd, Coroutine::Ptr coroutine);
 
-	Channel(int fd, CoroutineScheduler* sheduler);
-
-	void setReadCallback(EventCallback read_cb);
-	void setWriteCallback(EventCallback write_cb);
-	void setRevents(int revents);
-	void enableReading();
-	void disableReading();
-	void handleEvent();
-	void setIndex(int index);
-	int index();
 	int fd();
 	int events();
+	Coroutine::Ptr coroutine();
+	void setReadEvent();
+	void unSetReadEvent();
+	void setWriteEvent();
+	void unSetWriteEvent();
 	
 private:
 	static const int kNoneEvent;
@@ -32,13 +30,7 @@ private:
 
 	const int fd_;
 	int events_;
-	int revents_;
-	int index_;
-
-	CoroutineScheduler* scheduler_;
-
-	EventCallback read_cb_;
-	EventCallback write_cb_;
+	Coroutine::Ptr coroutine_;
 };
 
 }

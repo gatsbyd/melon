@@ -13,6 +13,8 @@ namespace melon {
 
 class CoroutineScheduler : public Noncopyable {
 public:
+	typedef std::shared_ptr<CoroutineScheduler> Ptr;
+
 	CoroutineScheduler();
 	virtual ~CoroutineScheduler() {}
 
@@ -21,7 +23,8 @@ public:
 	void stop();
 	void schedule(Coroutine::Ptr coroutine);
 	void schedule(Coroutine::Func func);
-	void updateChannel(Channel* channel);
+	void updateEvent(PollEvent::Ptr event);
+	void removeEvent(int fd);
 
 	static CoroutineScheduler* GetSchedulerOfThisThread();
 
@@ -31,9 +34,8 @@ private:
 
 	bool started_;
 	Mutex mutex_;
-	Poller::Ptr poller_;
+	PollPoller poller_;
 	int event_fd_;
-	Channel event_channel_;
 	std::list<Coroutine::Ptr> coroutines_;
 };
 

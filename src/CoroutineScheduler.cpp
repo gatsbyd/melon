@@ -24,13 +24,9 @@ static int createEventFd() {
 CoroutineScheduler::CoroutineScheduler()
 	:started_(false),
 	mutex_(),
-	poller_(new PollPoller()),
-	event_fd_(createEventFd()),
-	event_channel_(event_fd_, this) {
+	poller_(this),
+	event_fd_(createEventFd()) {
 	
-	event_channel_.setReadCallback(std::bind(&CoroutineScheduler::comsumeWakeEvent, this));
-	event_channel_.enableReading();
-
 	if (t_scheduleInThisThread != nullptr) {
 		LOG_FATAL << "create two Scheduler in one thread";
 	} else {
@@ -43,7 +39,7 @@ void CoroutineScheduler::run() {
 	Coroutine::Ptr cur;
 
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>([&](){
-						poller_->poll(kPollTimeMs);
+						poller_.poll(kPollTimeMs);
 					});
 
 	while (started_) {
@@ -77,7 +73,7 @@ void CoroutineScheduler::schedule(Coroutine::Ptr coroutine) {
 	coroutines_.push_back(coroutine);
 
 	if (need_notify) {
-		
+		wakeupPollCoroutine();
 	}
 }
 
@@ -85,8 +81,12 @@ void CoroutineScheduler::schedule(Coroutine::Func func) {
 	coroutines_.push_back(std::make_shared<Coroutine>(std::move(func)));
 }
 
-void CoroutineScheduler::updateChannel(Channel* channel) {
-	poller_->updateChannel(channel);
+void CoroutineScheduler::updateEvent(PollEvent::Ptr event) {
+	poller_.updateEvent(event);
+}
+	
+void CoroutineScheduler::removeEvent(int fd) {
+	poller_.removeEvent(fd);
 }
 
 void CoroutineScheduler::start() {

@@ -12,6 +12,10 @@
 
 
 namespace melon {
+	
+Socket::~Socket() {
+	::close(fd_);
+}
 
 void Socket::bind(const IpAddress& local) {
 	if (::bind(fd_, local.getSockAddr(), sizeof(struct sockaddr_in)) < 0) {
@@ -29,10 +33,10 @@ int Socket::accept(IpAddress& peer) {
 	//todo:accept4
 	socklen_t addrlen = static_cast<socklen_t>(sizeof (struct sockaddr));
 	int connfd = ::accept(fd_, peer.getSockAddr(), &addrlen);
-	setNonBlockAndCloseOnExec();
+	setNonBlockAndCloseOnExec(connfd);
 
 	if (connfd < 0) {
-		//todo:
+		//todo: handle error
 		LOG_FATAL << "accept:" << strerror(errno);
 	}
 	return connfd;
@@ -78,20 +82,30 @@ void Socket::setKeepAlive(bool on) {
 	}
 }
 
-void Socket::setNonBlockAndCloseOnExec() {
-	int flags = ::fcntl(fd_, F_GETFL, 0);
+void Socket::setNonBlockAndCloseOnExec(int fd) {
+	int flags = ::fcntl(fd, F_GETFL, 0);
 	flags |= O_NONBLOCK;
-	int ret = ::fcntl(fd_, F_SETFL, flags);
+	int ret = ::fcntl(fd, F_SETFL, flags);
 	if (ret == -1) {
 		LOG_FATAL << "fcntl" << strerror(errno);
 	}
 
-	flags = ::fcntl(fd_, F_GETFD, 0);
+	flags = ::fcntl(fd, F_GETFD, 0);
 	flags |= FD_CLOEXEC;
-	ret = ::fcntl(fd_, F_SETFD, flags);
+	ret = ::fcntl(fd, F_SETFD, flags);
 	if (ret == -1) {
 		LOG_FATAL << "fcntl" << strerror(errno);
 	}
+}
+
+int Socket::CreateSocket() {
+	int fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (fd < 0) {
+		LOG_FATAL << "socket: " << strerror(errno);
+	}
+
+	setNonBlockAndCloseOnExec(fd);
+	return fd;
 }
 
 }

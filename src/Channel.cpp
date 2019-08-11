@@ -6,68 +6,43 @@
 
 namespace melon {
 	
-const int Channel::kNoneEvent = 0;
-const int Channel::kReadEvent = POLLIN | POLLPRI;
-const int Channel::kWriteEvent = POLLOUT;
+const int PollEvent::kNoneEvent = 0;
+const int PollEvent::kReadEvent = POLLIN | POLLPRI;
+const int PollEvent::kWriteEvent = POLLOUT;
 
-Channel::Channel(int fd, CoroutineScheduler* scheduler) 
+PollEvent::PollEvent(int fd,  Coroutine::Ptr coroutine)
 	:fd_(fd),
 	events_(kNoneEvent),
-	revents_(kNoneEvent),
-	index_(-1),
-	scheduler_(scheduler) {
+	coroutine_(coroutine) {
 
 }
 
-void Channel::enableReading() {
+void PollEvent::setReadEvent() {
 	events_ |= kReadEvent;
-	scheduler_->updateChannel(this);
 }
 
-void Channel::disableReading() {
+void PollEvent::unSetReadEvent() {
 	events_ &= ~kReadEvent;
-	scheduler_->updateChannel(this);
 }
 
-void Channel::setReadCallback(EventCallback read_cb) {
-	read_cb_ = std::move(read_cb);
+void PollEvent::setWriteEvent() {
+	events_ |= kWriteEvent;
 }
 
-void Channel::setWriteCallback(EventCallback write_cb) {
-	write_cb_ = std::move(write_cb);
+void PollEvent::unSetWriteEvent() {
+	events_ &= ~kWriteEvent;
 }
 
-void Channel::handleEvent() {
-	if (revents_ & (POLLIN | POLLPRI | POLLRDHUP)) {
-		if (read_cb_) {
-			read_cb_();
-		}
-	} 
-	if (revents_ & (POLLOUT)) { 
-		if (write_cb_) {
-			write_cb_();
-		}
-	}
-}
-
-void Channel::setRevents(int revents) {
-	revents_ = revents;
-}
-
-void Channel::setIndex(int index) {
-	index_ = index;
-}
-
-int Channel::index() {
-	return index_;
-}
-
-int Channel::fd() {
+int PollEvent::fd() {
 	return fd_;
 }
 
-int Channel::events() {
+int PollEvent::events() {
 	return events_;
+}
+
+Coroutine::Ptr PollEvent::coroutine() {
+	return coroutine_;
 }
 
 }

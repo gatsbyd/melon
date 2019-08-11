@@ -11,6 +11,8 @@ namespace melon {
 
 class SchedulerThread :public Noncopyable {
 public:
+	typedef std::shared_ptr<SchedulerThread> Ptr;
+
 	SchedulerThread();
 	~SchedulerThread();
 

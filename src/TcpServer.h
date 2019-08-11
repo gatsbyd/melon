@@ -1,30 +1,38 @@
 #ifndef _MELON_TCP_SERVER_H_
 #define _MELON_TCP_SERVER_H_
 
+#include "Address.h"
 #include "CoroutineScheduler.h"
+#include "Socket.h"
+#include "SchedulerThread.h"
 
 #include <vector>
 
 namespace melon {
+	
+class IpAddress;
 
-class TcpServer {
+class TcpServer : public Noncopyable {
 public:
 	//todo:
-	TcpServer(std::string ip, int port, int thread_num);
+	TcpServer(const IpAddress& listen_addr, int thread_num = 0);
+	~TcpServer() {}
 	
 	//todo:
-	void start() {
-		//todo:将监听描述符加到scheduler中
-		accept_scheduler_->run();
-	}
+	void start();
 
-private:
-	std::string ip_;
-	int port_;
+protected:
+	CoroutineScheduler* selectOneScheduler();
+	void onAccept();
+	void handleClient(Socket::Ptr socket);
+
+	IpAddress listen_addr_;
 	int thread_num_;
-	CoroutineScheduler* accept_scheduler_;
+	Socket listen_socket_;
+	CoroutineScheduler accept_scheduler_;
+	std::vector<SchedulerThread::Ptr> thread_pool_;
 	std::vector<CoroutineScheduler*> connect_scheduler_;
-	
+
 };
 
 }

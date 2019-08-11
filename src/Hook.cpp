@@ -1,10 +1,12 @@
 #include "Coroutine.h"
 #include "CoroutineScheduler.h"
+#include "Channel.h"
 #include "Hook.h"
 #include "Log.h"
 
 #include <dlfcn.h>
 #include <errno.h>
+#include <memory>
 
 namespace melon {
 
@@ -38,8 +40,13 @@ retry:
 		if (!scheduler) {
 			LOG_FATAL << "call hooked api in non io thread";
 		}
-		scheduler->schedule(melon::Coroutine::GetCurrentCoroutine());
+		//scheduler->schedule(melon::Coroutine::GetCurrentCoroutine());
+		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
+		PollEvent::Ptr event = std::make_shared<PollEvent>(fd, melon::Coroutine::GetCurrentCoroutine());
+		scheduler->updateEvent(event);
 		melon::Coroutine::Yield();
+		//清除事件
+		
 		goto retry;
 	}
 

@@ -2,6 +2,7 @@
 #define _MELON_POLLER_H_
 
 #include "Noncopyable.h"
+#include "Channel.h"
 
 #include <map>
 #include <memory>
@@ -10,7 +11,7 @@
 
 namespace melon {
 
-class Channel;
+class CoroutineScheduler;
 
 class Poller : public Noncopyable {
 public:
@@ -18,22 +19,26 @@ public:
 
 	Poller() = default;
 	virtual ~Poller() {};
-	virtual void updateChannel(Channel* channel) = 0;
+	virtual void updateEvent(PollEvent::Ptr event) = 0;
+	virtual void removeEvent(int fd) = 0;
 
 	virtual void poll(int timeout) = 0;
 };
 
 class PollPoller : public Poller {
 public:
-	PollPoller();
+	PollPoller(CoroutineScheduler* scheduler);
 
-	void updateChannel(Channel* channel) override;
+	void updateEvent(PollEvent::Ptr event) override;
+	void removeEvent(int fd) override;
 
 	void poll(int timeout) override;
 
 private:
 	std::vector<struct pollfd> pollfds_;
-	std::map<int, Channel*> fd_to_channel_;
+	std::map<int, Coroutine::Ptr> fd_to_coroutine_;
+	std::map<int, int> fd_to_index_;
+	CoroutineScheduler* scheduler_;
 };
 
 }
