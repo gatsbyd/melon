@@ -39,15 +39,15 @@ void CoroutineScheduler::run() {
 	Coroutine::Ptr cur;
 
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>([&](){
+						LOG_DEBUG << "start poll coroutine:" << Coroutine::GetCurrentCoroutine()->name();
 						poller_.poll(kPollTimeMs);
-					});
+					}, "Poll");
 
 	while (started_) {
 		//todo:线程安全
 		{
 			//没有协程时执行poll协程
 			if (coroutines_.empty()) {
-				LOG_DEBUG << "execute poll coroutine";
 				cur = poll_coroutine;
 			} else {
 				for (auto it = coroutines_.begin();
@@ -73,12 +73,12 @@ void CoroutineScheduler::schedule(Coroutine::Ptr coroutine) {
 	coroutines_.push_back(coroutine);
 
 	if (need_notify) {
-		wakeupPollCoroutine();
+	//	wakeupPollCoroutine();
 	}
 }
 
-void CoroutineScheduler::schedule(Coroutine::Func func) {
-	coroutines_.push_back(std::make_shared<Coroutine>(std::move(func)));
+void CoroutineScheduler::schedule(Coroutine::Func func, std::string name) {
+	coroutines_.push_back(std::make_shared<Coroutine>(std::move(func), name));
 }
 
 void CoroutineScheduler::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {

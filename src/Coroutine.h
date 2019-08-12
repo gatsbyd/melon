@@ -25,7 +25,7 @@ public:
 	typedef std::function<void ()> Func;
 	typedef std::shared_ptr<Coroutine> Ptr;
 
-	Coroutine(Func cb, uint32_t stack_size = 1024 * 128);
+	Coroutine(Func cb, std::string name = "", uint32_t stack_size = 1024 * 128);
 	Coroutine();
 	~Coroutine();
 
@@ -33,6 +33,7 @@ public:
 	static void Yield();
 	//执行当前协程
 	void resume();
+	std::string name();
 	static uint64_t GetCid();
 	static Coroutine::Ptr GetCurrentCoroutine();
 	
@@ -41,6 +42,7 @@ private:
 	static void EnsureMainCoroutine();
 
 	uint64_t c_id_;
+	std::string name_;
 
 	ucontext_t context_;
 	Func cb_;

@@ -21,8 +21,8 @@ public:
 	void start();
 	void stop();
 	void schedule(Coroutine::Ptr coroutine);
-	void schedule(Coroutine::Func func);
-	void updateEvent(int fd, int events, Coroutine::Ptr coroutine);
+	void schedule(Coroutine::Func func, std::string name = "");
+	void updateEvent(int fd, int events, Coroutine::Ptr coroutine = nullptr);
 	void removeEvent(int fd);
 
 	static CoroutineScheduler* GetSchedulerOfThisThread();

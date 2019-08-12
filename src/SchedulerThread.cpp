@@ -22,6 +22,7 @@ CoroutineScheduler* SchedulerThread::startSchedule() {
 	while (scheduler_ == nullptr) {
 		cond_.wait();
 	}
+	scheduler_->start();
 	return scheduler_;
 }
 

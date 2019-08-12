@@ -24,7 +24,7 @@ public:
 protected:
 	CoroutineScheduler* selectOneScheduler();
 	void onAccept();
-	void handleClient(Socket::Ptr socket);
+	virtual void handleClient(Socket::Ptr socket);
 
 	IpAddress listen_addr_;
 	int thread_num_;

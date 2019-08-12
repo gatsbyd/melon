@@ -26,6 +26,10 @@ public:
 	virtual void removeEvent(int fd) = 0;
 
 	virtual void poll(int timeout) = 0;
+
+protected:
+	std::string eventToString(int event);
+
 };
 
 class PollPoller : public Poller {
@@ -40,7 +44,7 @@ public:
 private:
 	std::vector<struct pollfd> pollfds_;
 	std::map<int, Coroutine::Ptr> fd_to_coroutine_;
-	std::map<int, int> fd_to_index_;
+	std::map<int, size_t> fd_to_index_;
 	CoroutineScheduler* scheduler_;
 };
 

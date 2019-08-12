@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <memory>
+#include <string.h>
 
 namespace melon {
 
@@ -28,11 +29,12 @@ accept_func accept_origin = nullptr;
 read_func read_origin = nullptr;
 write_func write_origin = nullptr;
 
-int accept(int fd, struct sockaddr *addr, socklen_t *addrlen) {
+int accept(int fd, struct sockaddr *peer, socklen_t *addrlen) {
+	LOG_DEBUG << "call hooked accept: fd=" << fd;
 	ssize_t n;
 retry:
 	do {
-		n = accept_origin(fd, addr, addrlen);
+		n = accept_origin(fd, peer, addrlen);
 	} while (n == -1 && errno == EINTR);
 
 	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
@@ -42,11 +44,10 @@ retry:
 		}
 
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
 		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
 		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
 		
 		goto retry;
 	}
@@ -55,6 +56,7 @@ retry:
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
+	LOG_DEBUG << "call hooked read";
 	ssize_t n;
 retry:
 	do {
@@ -68,12 +70,11 @@ retry:
 		}
 
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
 		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
 		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
-
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
+		
 		goto retry;
 	}
 
@@ -81,6 +82,7 @@ retry:
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
+	LOG_DEBUG << "call hooked write";
 	ssize_t n;
 retry:
 	do {
@@ -94,11 +96,10 @@ retry:
 		}
 
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		assert(melon::Coroutine::GetCurrentCoroutine().use_count() == 1);
 		scheduler->updateEvent(fd, melon::Poller::kWriteEvent, melon::Coroutine::GetCurrentCoroutine());
 		melon::Coroutine::Yield();
 		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent, melon::Coroutine::GetCurrentCoroutine());
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
 
 		goto retry;
 	}

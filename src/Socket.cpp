@@ -1,6 +1,8 @@
-#include "Socket.h"
 #include "Address.h"
 #include "Log.h"
+#include "Hook.h"
+#include "Socket.h"
+#include "SchedulerThread.h"
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -14,7 +16,9 @@
 namespace melon {
 	
 Socket::~Socket() {
+	scheduler_->removeEvent(fd_);
 	::close(fd_);
+	LOG_DEBUG << "destroy socket:" << fd_;
 }
 
 void Socket::bind(const IpAddress& local) {
@@ -33,7 +37,10 @@ int Socket::accept(IpAddress& peer) {
 	//todo:accept4
 	socklen_t addrlen = static_cast<socklen_t>(sizeof (struct sockaddr));
 	int connfd = ::accept(fd_, peer.getSockAddr(), &addrlen);
-	setNonBlockAndCloseOnExec(connfd);
+	if (connfd < 0) {
+		LOG_FATAL << "accept: " << strerror(errno);
+	}
+	SetNonBlockAndCloseOnExec(connfd);
 
 	if (connfd < 0) {
 		//todo: handle error
@@ -82,29 +89,29 @@ void Socket::setKeepAlive(bool on) {
 	}
 }
 
-void Socket::setNonBlockAndCloseOnExec(int fd) {
+void Socket::SetNonBlockAndCloseOnExec(int fd) {
 	int flags = ::fcntl(fd, F_GETFL, 0);
 	flags |= O_NONBLOCK;
 	int ret = ::fcntl(fd, F_SETFL, flags);
 	if (ret == -1) {
-		LOG_FATAL << "fcntl" << strerror(errno);
+		LOG_FATAL << "fcntl: fd=" << fd << ", " << strerror(errno);
 	}
 
 	flags = ::fcntl(fd, F_GETFD, 0);
 	flags |= FD_CLOEXEC;
 	ret = ::fcntl(fd, F_SETFD, flags);
 	if (ret == -1) {
-		LOG_FATAL << "fcntl" << strerror(errno);
+		LOG_FATAL << "fcntl: fd=" << fd << ","  << strerror(errno);
 	}
 }
 
 int Socket::CreateSocket() {
-	int fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		LOG_FATAL << "socket: " << strerror(errno);
 	}
 
-	setNonBlockAndCloseOnExec(fd);
+	SetNonBlockAndCloseOnExec(fd);
 	return fd;
 }
 

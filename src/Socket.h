@@ -6,12 +6,14 @@
 namespace melon {
 
 class IpAddress;
+class CoroutineScheduler;
 
 class Socket {
 public:
 	typedef std::shared_ptr<Socket> Ptr;
 
-	Socket(int fd) :fd_(fd) {}
+	explicit Socket(int fd, CoroutineScheduler* scheduler) 
+		:fd_(fd), scheduler_(scheduler) {}
 	~Socket();
 
 	void bind(const IpAddress& local);
@@ -25,10 +27,11 @@ public:
 	void setReusePort(bool on);
 	void setKeepAlive(bool on);
 
-	static void setNonBlockAndCloseOnExec(int fd);
+	static void SetNonBlockAndCloseOnExec(int fd);
 	static int CreateSocket();
 private:
 	int fd_;
+	CoroutineScheduler* scheduler_;
 };
 
 }

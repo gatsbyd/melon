@@ -13,13 +13,15 @@ static std::atomic<uint64_t> s_coroutine_id {0};
 static thread_local Coroutine::Ptr s_cur_coroutine;
 static thread_local Coroutine::Ptr s_main_coroutine;
 
-Coroutine::Coroutine(Func cb, uint32_t stack_size)
+Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 	:c_id_(++s_coroutine_id), 
+	name_(name + "_" + std::to_string(c_id_)),
 	cb_(std::move(cb)),
 	stack_size_(stack_size),
 	state_(CoroutineState::INIT) {
 	assert(stack_size > 0);
 	
+	LOG_DEBUG << "create coroutine:" << name_;
 	//todo:统一分配函数
 	stack_ = malloc(stack_size_);
 	if (!stack_) {
@@ -39,7 +41,9 @@ Coroutine::Coroutine(Func cb, uint32_t stack_size)
 
 Coroutine::Coroutine()
 	:c_id_(++s_coroutine_id),
+	name_("main_" + std::to_string(c_id_)),
 	state_(CoroutineState::INIT) {
+	LOG_DEBUG << "create coroutine:" << name_;
 	
 	if (getcontext(&context_)) {
 		LOG_ERROR << "getcontext: errno=" << errno
@@ -48,6 +52,7 @@ Coroutine::Coroutine()
 }
 
 Coroutine::~Coroutine() {
+	LOG_DEBUG << "destroy coroutine:" << name_;
 	if (stack_) {
 		//todo:
 		free(stack_);
@@ -61,8 +66,12 @@ void Coroutine::Yield() {
 		return;
 	}
 
-	Coroutine::Ptr old_coroutine = s_cur_coroutine;
+	//这里不能用智能指针，因为swapcontext切到别的协程时局部对象不会被回收，当协程执行完毕后，swapcontext之后的语句不会被执行
+	Coroutine* old_coroutine = s_cur_coroutine.get();
 	s_cur_coroutine = s_main_coroutine;
+
+	LOG_DEBUG << "swap coroutine:" << s_cur_coroutine->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+
 	if (swapcontext(&(old_coroutine->context_), &(s_cur_coroutine->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
@@ -78,15 +87,18 @@ void Coroutine::resume() {
 		LOG_DEBUG << "resume a terminated coroutine " << c_id_;
 		return;
 	}
+	Coroutine::Ptr old_coroutine = s_cur_coroutine;
 	s_cur_coroutine = shared_from_this();
-	if (swapcontext(&(s_main_coroutine->context_), &(s_cur_coroutine->context_))) {
+
+	LOG_DEBUG << "swap coroutine:" << s_cur_coroutine->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+
+	if (swapcontext(&(old_coroutine->context_), &(s_cur_coroutine->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
 	}
 }
 
 uint64_t Coroutine::GetCid() {
-	EnsureMainCoroutine();
 	return s_cur_coroutine->c_id_;
 }
 
@@ -112,6 +124,10 @@ void Coroutine::EnsureMainCoroutine() {
 
 Coroutine::Ptr Coroutine::GetCurrentCoroutine() {
 	return s_cur_coroutine;
+}
+
+std::string Coroutine::name() {
+	return name_;
 }
 
 }
