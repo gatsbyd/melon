@@ -1,3 +1,4 @@
+#include "Log.h"
 #include "SchedulerThread.h"
 
 
@@ -12,7 +13,8 @@ SchedulerThread::SchedulerThread()
 }
 
 SchedulerThread::~SchedulerThread() {
-
+	//todo:
+	
 }
 
 CoroutineScheduler* SchedulerThread::startSchedule() {
@@ -22,14 +24,17 @@ CoroutineScheduler* SchedulerThread::startSchedule() {
 	while (scheduler_ == nullptr) {
 		cond_.wait();
 	}
-	scheduler_->start();
 	return scheduler_;
 }
 
 void SchedulerThread::threadFunc() {
 	CoroutineScheduler scheduler;
-	scheduler_ = &scheduler;
-	cond_.notify();
+
+	{
+		MutexGuard guard(mutex_);
+		scheduler_ = &scheduler;
+		cond_.notify();
+	}
 
 	scheduler.run();
 }

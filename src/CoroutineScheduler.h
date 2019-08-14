@@ -18,7 +18,6 @@ public:
 	virtual ~CoroutineScheduler() {}
 
 	virtual void run();
-	void start();
 	void stop();
 	void schedule(Coroutine::Ptr coroutine);
 	void schedule(Coroutine::Func func, std::string name = "");

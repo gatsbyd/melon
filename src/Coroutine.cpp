@@ -9,7 +9,7 @@
 
 namespace melon {
 
-static std::atomic<uint64_t> s_coroutine_id {0};
+static thread_local std::atomic<uint64_t> s_coroutine_id {0};
 static thread_local Coroutine::Ptr s_cur_coroutine;
 static thread_local Coroutine::Ptr s_main_coroutine;
 
@@ -41,7 +41,7 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 
 Coroutine::Coroutine()
 	:c_id_(++s_coroutine_id),
-	name_("main_" + std::to_string(c_id_)),
+	name_("Main_" + std::to_string(c_id_)),
 	state_(CoroutineState::INIT) {
 	LOG_DEBUG << "create coroutine:" << name_;
 	

@@ -21,8 +21,7 @@ void TcpServer::start() {
 	for (auto& thread : thread_pool_) {
 		connect_scheduler_.push_back(thread->startSchedule());
 	}
-	accept_scheduler_.schedule(std::bind(&TcpServer::onAccept, this), "accept");
-	accept_scheduler_.start();
+	accept_scheduler_.schedule(std::bind(&TcpServer::onAccept, this), "Accept");
 	accept_scheduler_.run();
 }
 
@@ -34,7 +33,7 @@ void TcpServer::onAccept() {
 		LOG_INFO << "new connection fd:" << connfd;
 
 		CoroutineScheduler* scheduler = selectOneScheduler();
-		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<Socket>(connfd, scheduler)), "connect");
+		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<Socket>(connfd, scheduler)), "Connect");
 	}
 }
 

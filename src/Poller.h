@@ -40,8 +40,9 @@ public:
 	void removeEvent(int fd) override;
 
 	void poll(int timeout) override;
-
+	bool isPoliing() { return is_polling; }
 private:
+	bool is_polling;
 	std::vector<struct pollfd> pollfds_;
 	std::map<int, Coroutine::Ptr> fd_to_coroutine_;
 	std::map<int, size_t> fd_to_index_;

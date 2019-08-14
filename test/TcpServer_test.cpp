@@ -7,7 +7,7 @@ using namespace melon;
 
 class EchoServer : public TcpServer {
 public:
-	EchoServer(IpAddress& addr) :TcpServer(addr) {
+	EchoServer(IpAddress& addr, int thread_num) :TcpServer(addr, thread_num) {
 
 	}
 protected:
@@ -27,7 +27,7 @@ int main() {
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	IpAddress listen_addr(1234);
-	EchoServer server(listen_addr);
+	EchoServer server(listen_addr, 2);
 	server.start();
 	return 0;
 }

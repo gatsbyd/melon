@@ -1,4 +1,5 @@
 #include "CoroutineScheduler.h"
+#include "Hook.h"
 #include "Log.h"
 
 #include <errno.h>
@@ -36,7 +37,15 @@ CoroutineScheduler::CoroutineScheduler()
 
 
 void CoroutineScheduler::run() {
+	started_ = true;
 	Coroutine::Ptr cur;
+
+	//当有新事件到来时唤醒poll协程
+	schedule([&](){
+				while (true) {
+					comsumeWakeEvent();	
+				}		
+			}, "Wake");
 
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>([&](){
 						LOG_DEBUG << "start poll coroutine:" << Coroutine::GetCurrentCoroutine()->name();
@@ -66,19 +75,16 @@ void CoroutineScheduler::run() {
 }
 
 void CoroutineScheduler::schedule(Coroutine::Ptr coroutine) {
-	bool need_notify = false;
-	if (coroutines_.empty()) {
-		need_notify = true;
-	}
+	//todo:线程安全
 	coroutines_.push_back(coroutine);
 
-	if (need_notify) {
-	//	wakeupPollCoroutine();
+	if (poller_.isPoliing()) {
+		wakeupPollCoroutine();
 	}
 }
 
 void CoroutineScheduler::schedule(Coroutine::Func func, std::string name) {
-	coroutines_.push_back(std::make_shared<Coroutine>(std::move(func), name));
+	schedule(std::make_shared<Coroutine>(std::move(func), name));
 }
 
 void CoroutineScheduler::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
@@ -87,10 +93,6 @@ void CoroutineScheduler::updateEvent(int fd, int events, Coroutine::Ptr coroutin
 	
 void CoroutineScheduler::removeEvent(int fd) {
 	poller_.removeEvent(fd);
-}
-
-void CoroutineScheduler::start() {
-	started_ = true;
 }
 
 void CoroutineScheduler::stop() {

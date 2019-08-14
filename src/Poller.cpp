@@ -86,7 +86,9 @@ void PollPoller::removeEvent(int fd) {
 
 void PollPoller::poll(int timeout) {
 	while (true) {
+		is_polling = true;
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
+		is_polling = false;
 		if (num == 0) {
 			LOG_INFO << "PollPoller::poll nothing happened";
 		} else if (num < 0) {
