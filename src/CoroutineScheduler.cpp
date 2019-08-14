@@ -50,8 +50,8 @@ void CoroutineScheduler::run() {
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
 	while (started_) {
-		//todo:线程安全
 		{
+			MutexGuard guard(mutex_);
 			//没有协程时执行poll协程
 			if (coroutines_.empty()) {
 				cur = poll_coroutine;
@@ -72,7 +72,7 @@ void CoroutineScheduler::run() {
 }
 
 void CoroutineScheduler::schedule(Coroutine::Ptr coroutine) {
-	//todo:线程安全
+	MutexGuard guard(mutex_);
 	coroutines_.push_back(coroutine);
 
 	if (poller_.isPoliing()) {
