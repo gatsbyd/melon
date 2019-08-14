@@ -62,6 +62,7 @@ Coroutine::~Coroutine() {
 
 //挂起当前正在执行的协程，切换到主协程执行，必须在非主协程调用
 void Coroutine::Yield() {
+	assert(s_cur_coroutine != nullptr);
 	if (s_cur_coroutine == s_main_coroutine) {
 		return;
 	}
@@ -99,6 +100,7 @@ void Coroutine::resume() {
 }
 
 uint64_t Coroutine::GetCid() {
+	assert(s_cur_coroutine != nullptr);
 	return s_cur_coroutine->c_id_;
 }
 
@@ -123,6 +125,7 @@ void Coroutine::EnsureMainCoroutine() {
 }
 
 Coroutine::Ptr Coroutine::GetCurrentCoroutine() {
+	assert(s_cur_coroutine != nullptr);
 	return s_cur_coroutine;
 }
 
