@@ -33,7 +33,8 @@ std::string Poller::eventToString(int event) {
 }
 
 PollPoller::PollPoller(CoroutineScheduler* scheduler)
-	:scheduler_(scheduler) {
+	:is_polling(false),
+	scheduler_(scheduler) {
 }	
 
 void PollPoller::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {

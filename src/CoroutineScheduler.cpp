@@ -47,10 +47,7 @@ void CoroutineScheduler::run() {
 				}		
 			}, "Wake");
 
-	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>([&](){
-						LOG_DEBUG << "start poll coroutine:" << Coroutine::GetCurrentCoroutine()->name();
-						poller_.poll(kPollTimeMs);
-					}, "Poll");
+	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
 	while (started_) {
 		//todo:线程安全

@@ -1,6 +1,8 @@
 #include "TcpServer.h"
 #include "Log.h"
 
+#include <assert.h>
+
 namespace melon {
 
 TcpServer::TcpServer(const IpAddress& listen_addr, int thread_num)
@@ -33,6 +35,7 @@ void TcpServer::onAccept() {
 		LOG_INFO << "new connection fd:" << connfd;
 
 		CoroutineScheduler* scheduler = selectOneScheduler();
+		assert(scheduler != nullptr);
 		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<Socket>(connfd, scheduler)), "Connect");
 	}
 }
@@ -42,7 +45,7 @@ CoroutineScheduler* TcpServer::selectOneScheduler() {
 		return &accept_scheduler_;
 	} else {
 		static int i = 0;
-		return connect_scheduler_[i++ / connect_scheduler_.size()];
+		return connect_scheduler_[i++ % connect_scheduler_.size()];
 	}
 }
 

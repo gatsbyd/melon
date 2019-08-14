@@ -1,6 +1,7 @@
 #include "Log.h"
 #include "SchedulerThread.h"
 
+#include <assert.h>
 
 namespace melon {
 
@@ -24,6 +25,7 @@ CoroutineScheduler* SchedulerThread::startSchedule() {
 	while (scheduler_ == nullptr) {
 		cond_.wait();
 	}
+	assert(scheduler_ != nullptr);
 	return scheduler_;
 }
 
