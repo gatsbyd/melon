@@ -14,8 +14,8 @@ public:
 
 	uint64_t getMicroSecondsFromEpoch() { return microseconds_from_epoch_; }
 	static Timestamp now();
-private:
 	const static uint64_t kMicrosecondsPerSecond = 1000 * 1000;
+private:
 	uint64_t microseconds_from_epoch_;
 };
 

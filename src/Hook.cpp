@@ -16,6 +16,7 @@ struct HookIniter {
 		accept_origin = (accept_func)::dlsym(RTLD_NEXT, "accept");
 		read_origin = (read_func)::dlsym(RTLD_NEXT, "read");
 		write_origin = (write_func)::dlsym(RTLD_NEXT, "write");
+		sleep_origin = (sleep_func)::dlsym(RTLD_NEXT, "sleep");
 	}
 };
 
@@ -28,9 +29,18 @@ extern "C" {
 accept_func accept_origin = nullptr;
 read_func read_origin = nullptr;
 write_func write_origin = nullptr;
+sleep_func sleep_origin = nullptr;
+
+unsigned int sleep(unsigned int seconds) {
+	melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
+	if (!scheduler) {
+		LOG_FATAL << "call hooked api in non io thread";
+	}
+	melon::Coroutine::Yield();
+	
+}
 
 int accept(int fd, struct sockaddr *peer, socklen_t *addrlen) {
-	LOG_DEBUG << "call hooked accept: fd=" << fd;
 	ssize_t n;
 retry:
 	do {

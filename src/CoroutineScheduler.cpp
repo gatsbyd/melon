@@ -26,6 +26,7 @@ CoroutineScheduler::CoroutineScheduler()
 	:started_(false),
 	mutex_(),
 	poller_(this),
+	timer_manager_(this),
 	event_fd_(createEventFd()) {
 	
 	if (t_scheduleInThisThread != nullptr) {
@@ -33,12 +34,6 @@ CoroutineScheduler::CoroutineScheduler()
 	} else {
 		t_scheduleInThisThread = this;
 	}
-}
-
-
-void CoroutineScheduler::run() {
-	started_ = true;
-	Coroutine::Ptr cur;
 
 	//当有新事件到来时唤醒poll协程
 	schedule([&](){
@@ -46,6 +41,20 @@ void CoroutineScheduler::run() {
 					comsumeWakeEvent();	
 				}		
 			}, "Wake");
+
+	schedule([&](){
+				while (true) {
+					timer_manager_.readTimerFd();
+					timer_manager_.dealWithExpiredTimer();
+				}
+			}, "Timer");
+}
+
+
+void CoroutineScheduler::run() {
+	started_ = true;
+	Coroutine::Ptr cur;
+
 
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
@@ -60,6 +69,7 @@ void CoroutineScheduler::run() {
 						it != coroutines_.end();
 							++it) {
 					//todo:条件
+					//引入优先级的概念
 					cur = *it;
 					coroutines_.erase(it);
 					break;

@@ -5,10 +5,12 @@
 #include "Mutex.h"
 #include "Noncopyable.h"
 #include "Poller.h"
+#include "TimerManager.h"
 
 #include <list>
 
 namespace melon {
+
 
 class CoroutineScheduler : public Noncopyable {
 public:
@@ -33,6 +35,7 @@ private:
 	bool started_;
 	Mutex mutex_;
 	PollPoller poller_;
+	TimerManager timer_manager_;
 	int event_fd_;
 	std::list<Coroutine::Ptr> coroutines_;
 };
