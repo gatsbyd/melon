@@ -14,7 +14,11 @@ namespace melon {
 class Timer {
 public:
 	typedef std::shared_ptr<Timer> Ptr;
-	Timer(Timestamp timestamp, Coroutine::Ptr coroutine, uint64_t interval);
+	Timer(Timestamp timestamp, Coroutine::Ptr coroutine, uint64_t interval)
+   		:timestamp_(timestamp),
+		coroutine_(coroutine),
+		interval_(interval)	{
+	}
 
 	Timestamp getTimestamp() { return timestamp_; }
 	Coroutine::Ptr getCoroutine() { return coroutine_; }

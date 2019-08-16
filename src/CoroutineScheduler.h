@@ -26,6 +26,8 @@ public:
 	void updateEvent(int fd, int events, Coroutine::Ptr coroutine = nullptr);
 	void removeEvent(int fd);
 
+	void runAt(Timestamp when, Coroutine::Ptr coroutine);
+
 	static CoroutineScheduler* GetSchedulerOfThisThread();
 
 private:

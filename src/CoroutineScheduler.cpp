@@ -55,7 +55,6 @@ void CoroutineScheduler::run() {
 	started_ = true;
 	Coroutine::Ptr cur;
 
-
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
 	while (started_) {
@@ -120,6 +119,10 @@ void CoroutineScheduler::comsumeWakeEvent() {
 	if (n != sizeof buffer) {
 		LOG_ERROR << "comsumeWakeEvent() size of the data is not 8 bytes";
 	}
+}
+
+void CoroutineScheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
+	timer_manager_.addTimer(when, coroutine);
 }
 
 CoroutineScheduler* CoroutineScheduler::GetSchedulerOfThisThread() {

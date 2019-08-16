@@ -1,5 +1,6 @@
 #include "Coroutine.h"
 #include "CoroutineScheduler.h"
+#include "Timestamp.h"
 #include "Hook.h"
 #include "Log.h"
 
@@ -36,8 +37,10 @@ unsigned int sleep(unsigned int seconds) {
 	if (!scheduler) {
 		LOG_FATAL << "call hooked api in non io thread";
 	}
+
+	scheduler->runAt(melon::Timestamp::now() + seconds * melon::Timestamp::kMicrosecondsPerSecond, melon::Coroutine::GetCurrentCoroutine());
 	melon::Coroutine::Yield();
-	
+	return 0;
 }
 
 int accept(int fd, struct sockaddr *peer, socklen_t *addrlen) {
@@ -86,6 +89,10 @@ retry:
 		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
 		
 		goto retry;
+	}
+
+	if (n == -1) {
+		LOG_DEBUG << "read:" << strerror(errno);
 	}
 
 	return n;

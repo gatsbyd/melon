@@ -13,6 +13,7 @@ int createTimerFd() {
 	if (timerfd < 0) {
 		LOG_FATAL << "timerfd_create:" << strerror(errno);
 	}
+
 	return timerfd;
 }
 
@@ -48,7 +49,8 @@ void TimerManager::resetTimerFd(Timestamp when) {
 
 void TimerManager::readTimerFd() {
 	uint64_t num_of_expirations;
-	ssize_t n = ::read(timer_fd_, &num_of_expirations, sizeof num_of_expirations);
+	LOG_DEBUG << "sizeof uint64_t:" << sizeof(uint64_t); 
+	ssize_t n = ::read(timer_fd_, &num_of_expirations, sizeof(uint64_t));
 	if (n != sizeof num_of_expirations) {
 		LOG_ERROR << "read " << n << " bytes instead of 8";
 	}
@@ -62,6 +64,11 @@ void TimerManager::dealWithExpiredTimer() {
 
 	for (const std::pair<Timestamp, Timer::Ptr>& pair : expired) {
 		scheduler_->schedule(pair.second->getCoroutine());
+	}
+	//todo:周期执行
+	
+	if (!timer_map_.empty()) {
+		resetTimerFd(timer_map_.begin()->first);
 	}
 }
 

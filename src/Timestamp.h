@@ -27,5 +27,13 @@ inline bool operator==(Timestamp lhs, Timestamp rhs) {
 	return lhs.getMicroSecondsFromEpoch() == rhs.getMicroSecondsFromEpoch();
 }
 
+inline Timestamp operator+(Timestamp lhs, uint64_t micro_seconds) {
+	return Timestamp(lhs.getMicroSecondsFromEpoch() + micro_seconds);
+}
+
+inline int64_t operator-(Timestamp lhs, Timestamp rhs) {
+	return lhs.getMicroSecondsFromEpoch() - rhs.getMicroSecondsFromEpoch();
+}
+
 }
 #endif
