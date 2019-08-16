@@ -42,7 +42,7 @@ public:
 	
 	void addTimer(Timestamp when, Coroutine::Ptr coroutine, uint64_t interval = 0);
 private:
-	void readTimerFd();
+	ssize_t readTimerFd();
 	void resetTimerFd(Timestamp when);
 	void dealWithExpiredTimer();
 

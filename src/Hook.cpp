@@ -12,12 +12,20 @@
 
 namespace melon {
 
+#define DLSYM(name) \
+		name ## _origin = (name ## _func)::dlsym(RTLD_NEXT, #name);
+
 struct HookIniter {
 	HookIniter() {
-		accept_origin = (accept_func)::dlsym(RTLD_NEXT, "accept");
-		read_origin = (read_func)::dlsym(RTLD_NEXT, "read");
-		write_origin = (write_func)::dlsym(RTLD_NEXT, "write");
-		sleep_origin = (sleep_func)::dlsym(RTLD_NEXT, "sleep");
+		DLSYM(sleep);
+		DLSYM(accept);
+		DLSYM(accept4);
+		DLSYM(read);
+		DLSYM(readv);
+		DLSYM(recv);
+		DLSYM(recvfrom);
+		DLSYM(recvmsg);
+		DLSYM(write);
 	}
 };
 
@@ -25,12 +33,47 @@ static HookIniter hook_initer;
 
 }
 
-extern "C" {
+template<typename OriginFun, typename... Args>
+static ssize_t ioHook(int fd, OriginFun origin_func, int event, Args&&... args) {
+	ssize_t n;
+retry:
+	do {
+		n = origin_func(fd, std::forward<Args>(args)...);
+	} while (n == -1 && errno == EINTR);
 
-accept_func accept_origin = nullptr;
-read_func read_origin = nullptr;
-write_func write_origin = nullptr;
-sleep_func sleep_origin = nullptr;
+	//todo:记得去掉EINVAL
+	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINVAL)) {
+		melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
+		if (!scheduler) {
+			LOG_FATAL << "call hooked api in non io thread";
+		}
+
+		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
+		scheduler->updateEvent(fd, event, melon::Coroutine::GetCurrentCoroutine());
+		melon::Coroutine::Yield();
+		//清除事件
+		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
+		
+		goto retry;
+	}
+
+	return n;
+}
+
+extern "C" {
+#define HOOK_INIT(name) \
+		name ## _func name ## _origin = nullptr;
+
+HOOK_INIT(sleep)
+HOOK_INIT(accept)
+HOOK_INIT(accept4)
+HOOK_INIT(read)
+HOOK_INIT(readv)
+HOOK_INIT(recv);
+HOOK_INIT(recvfrom);
+HOOK_INIT(recvmsg);
+HOOK_INIT(write)
+
 
 unsigned int sleep(unsigned int seconds) {
 	melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
@@ -38,90 +81,42 @@ unsigned int sleep(unsigned int seconds) {
 		LOG_FATAL << "call hooked api in non io thread";
 	}
 
-	scheduler->runAt(melon::Timestamp::now() + seconds * melon::Timestamp::kMicrosecondsPerSecond, melon::Coroutine::GetCurrentCoroutine());
+	scheduler->scheduleAt(melon::Timestamp::now() + seconds * melon::Timestamp::kMicrosecondsPerSecond, melon::Coroutine::GetCurrentCoroutine());
 	melon::Coroutine::Yield();
 	return 0;
 }
 
-int accept(int fd, struct sockaddr *peer, socklen_t *addrlen) {
-	ssize_t n;
-retry:
-	do {
-		n = accept_origin(fd, peer, addrlen);
-	} while (n == -1 && errno == EINTR);
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+	return ioHook(sockfd, accept_origin, melon::Poller::kReadEvent, addr, addrlen);
+}
 
-	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-		melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
-		if (!scheduler) {
-			LOG_FATAL << "call hooked api in non io thread";
-		}
-
-		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
-		melon::Coroutine::Yield();
-		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
-		
-		goto retry;
-	}
-
-	return n;
+int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
+	return ioHook(sockfd, accept4_origin, melon::Poller::kReadEvent, addr, addrlen, flags);
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-	LOG_DEBUG << "call hooked read";
-	ssize_t n;
-retry:
-	do {
-		n = read_origin(fd, buf, count);
-	} while (n == -1 && errno == EINTR);
+	return ioHook(fd, read_origin, melon::Poller::kReadEvent, buf, count);
+}
 
-	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-		melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
-		if (!scheduler) {
-			LOG_FATAL << "call hooked api in non io thread";
-		}
+ssize_t readv(int fd, const struct iovec *iov, int iovcnt) {
+	return ioHook(fd, readv_origin, melon::Poller::kReadEvent, iov, iovcnt);
+}
 
-		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		scheduler->updateEvent(fd, melon::Poller::kReadEvent, melon::Coroutine::GetCurrentCoroutine());
-		melon::Coroutine::Yield();
-		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
-		
-		goto retry;
-	}
+ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
+	return ioHook(sockfd, recv_origin, melon::Poller::kReadEvent, buf, len, flags);
+}
 
-	if (n == -1) {
-		LOG_DEBUG << "read:" << strerror(errno);
-	}
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, 
+				struct sockaddr *src_addr, socklen_t *addrlen) {
+	return ioHook(sockfd, recvfrom_origin, melon::Poller::kReadEvent, buf, len, flags, src_addr, addrlen);
+}
 
-	return n;
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags) {
+	return ioHook(sockfd, recvmsg, melon::Poller::kReadEvent, msg, flags);
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-	LOG_DEBUG << "call hooked write";
-	ssize_t n;
-retry:
-	do {
-		n = write_origin(fd, buf, count);
-	} while (n == -1 && errno == EINTR);
-
-	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-		melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
-		if (!scheduler) {
-			LOG_FATAL << "call hooked api in non io thread";
-		}
-
-		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		scheduler->updateEvent(fd, melon::Poller::kWriteEvent, melon::Coroutine::GetCurrentCoroutine());
-		melon::Coroutine::Yield();
-		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
-
-		goto retry;
-	}
-
-	return n;
+	return ioHook(fd, write_origin, melon::Poller::kWriteEvent, buf, count);
 }
 
 }

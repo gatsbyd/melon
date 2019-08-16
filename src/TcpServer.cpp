@@ -28,7 +28,6 @@ void TcpServer::start() {
 }
 
 void TcpServer::onAccept() {
-	LOG_DEBUG << "start accept coroutine:" << Coroutine::GetCurrentCoroutine()->name();
 	while (true) {
 		IpAddress peer_addr;
 		int connfd = listen_socket_.accept(peer_addr);

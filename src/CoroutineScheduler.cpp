@@ -36,15 +36,22 @@ CoroutineScheduler::CoroutineScheduler()
 	}
 
 	//当有新事件到来时唤醒poll协程
+	
 	schedule([&](){
 				while (true) {
-					comsumeWakeEvent();	
-				}		
+					if (comsumeWakeEvent() < 0) {
+						LOG_ERROR << "read eventfd:" << strerror(errno);
+						break;
+					}
+				}
 			}, "Wake");
 
 	schedule([&](){
 				while (true) {
-					timer_manager_.readTimerFd();
+					if (timer_manager_.readTimerFd() < 0) {
+						LOG_ERROR << "read timerfd:" << strerror(errno);
+						break;
+					}
 					timer_manager_.dealWithExpiredTimer();
 				}
 			}, "Timer");
@@ -113,15 +120,17 @@ void CoroutineScheduler::wakeupPollCoroutine() {
 	}
 }
 
-void CoroutineScheduler::comsumeWakeEvent() {
+ssize_t CoroutineScheduler::comsumeWakeEvent() {
 	uint64_t buffer = 1;
 	ssize_t n = ::read(event_fd_, &buffer, sizeof buffer);
 	if (n != sizeof buffer) {
 		LOG_ERROR << "comsumeWakeEvent() size of the data is not 8 bytes";
 	}
+	return n;
 }
 
-void CoroutineScheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
+//一段时间后执行指定协程
+void CoroutineScheduler::scheduleAt(Timestamp when, Coroutine::Ptr coroutine) {
 	timer_manager_.addTimer(when, coroutine);
 }
 

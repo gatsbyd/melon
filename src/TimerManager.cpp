@@ -47,13 +47,13 @@ void TimerManager::resetTimerFd(Timestamp when) {
 	}
 }
 
-void TimerManager::readTimerFd() {
+ssize_t TimerManager::readTimerFd() {
 	uint64_t num_of_expirations;
-	LOG_DEBUG << "sizeof uint64_t:" << sizeof(uint64_t); 
 	ssize_t n = ::read(timer_fd_, &num_of_expirations, sizeof(uint64_t));
 	if (n != sizeof num_of_expirations) {
 		LOG_ERROR << "read " << n << " bytes instead of 8";
 	}
+	return n;
 }
 
 void TimerManager::dealWithExpiredTimer() {

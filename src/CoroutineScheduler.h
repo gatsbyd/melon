@@ -26,13 +26,13 @@ public:
 	void updateEvent(int fd, int events, Coroutine::Ptr coroutine = nullptr);
 	void removeEvent(int fd);
 
-	void runAt(Timestamp when, Coroutine::Ptr coroutine);
+	void scheduleAt(Timestamp when, Coroutine::Ptr coroutine);
 
 	static CoroutineScheduler* GetSchedulerOfThisThread();
 
 private:
 	void wakeupPollCoroutine();
-	void comsumeWakeEvent();
+	ssize_t comsumeWakeEvent();
 
 	bool started_;
 	Mutex mutex_;

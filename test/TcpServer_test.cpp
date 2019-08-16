@@ -16,6 +16,7 @@ protected:
 		char buffer[500];
 		int n;
 		while ((n = read(fd, buffer, sizeof buffer)) > 0) {
+			sleep(3);
 			write(fd, buffer, n);
 		}
 		LOG_DEBUG << "close echo connection";
