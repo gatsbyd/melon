@@ -26,6 +26,10 @@ struct HookIniter {
 		DLSYM(recvfrom);
 		DLSYM(recvmsg);
 		DLSYM(write);
+		DLSYM(writev);
+		DLSYM(send);
+		DLSYM(sendto);
+		DLSYM(sendmsg);
 	}
 };
 
@@ -69,10 +73,15 @@ HOOK_INIT(accept)
 HOOK_INIT(accept4)
 HOOK_INIT(read)
 HOOK_INIT(readv)
-HOOK_INIT(recv);
-HOOK_INIT(recvfrom);
-HOOK_INIT(recvmsg);
+HOOK_INIT(recv)
+HOOK_INIT(recvfrom)
+HOOK_INIT(recvmsg)
 HOOK_INIT(write)
+HOOK_INIT(writev)
+HOOK_INIT(send)
+HOOK_INIT(sendto)
+HOOK_INIT(sendmsg)
+
 
 
 unsigned int sleep(unsigned int seconds) {
@@ -117,6 +126,24 @@ ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags) {
 
 ssize_t write(int fd, const void *buf, size_t count) {
 	return ioHook(fd, write_origin, melon::Poller::kWriteEvent, buf, count);
+}
+
+
+ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
+	return ioHook(fd, writev_origin, melon::Poller::kWriteEvent, iov, iovcnt);
+}
+
+ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
+	return ioHook(sockfd, send_origin, melon::Poller::kWriteEvent, buf, len, flags);
+}
+
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, 
+		const struct sockaddr *dest_addr, socklen_t addrlen) {
+	return ioHook(sockfd, sendto_origin, melon::Poller::kWriteEvent, buf, len, flags, dest_addr, addrlen);
+}
+
+ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags) {
+	return ioHook(sockfd, sendmsg_origin, melon::Poller::kWriteEvent, msg, flags);	
 }
 
 }

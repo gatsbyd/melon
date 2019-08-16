@@ -38,10 +38,28 @@ extern recvfrom_func recvfrom_origin;
 typedef ssize_t (*recvmsg_func)(int sockfd, struct msghdr *msg, int flags);
 extern recvmsg_func recvmsg_origin;
 
-
 //write
 typedef ssize_t (*write_func)(int fd, const void *buf, size_t count);
 extern write_func write_origin;
+
+//writev
+typedef ssize_t (*writev_func)(int fd, const struct iovec *iov, int iovcnt);
+extern writev_func writev_origin;
+
+//send
+typedef ssize_t (*send_func)(int sockfd, const void *buf, size_t len, int flags);
+extern send_func send_origin;
+
+//sendto
+typedef ssize_t (*sendto_func)(int sockfd, const void *buf, size_t len, int flags, 
+			const struct sockaddr *dest_addr, socklen_t addrlen);
+extern sendto_func sendto_origin;
+
+//sendmsg
+typedef ssize_t (*sendmsg_func)(int sockfd, const struct msghdr *msg, int flags);
+extern sendmsg_func sendmsg_origin;
+
+
 
 }
 
