@@ -5,38 +5,14 @@
 namespace melon {
 namespace http {
 
-std::string HttpMethodToString(HttpMethod method) {
-	std::string name;
-	switch (method) {
-		case HttpMethod::DELETE:
-			 name = "DELETE";
-			 break;
-		case HttpMethod::GET:
-			 name = "GET";
-			 break;
-		case HttpMethod::HEAD:
-			 name = "HEAD";
-			 break;
-		case HttpMethod::POST:
-			 name = "POST";
-			 break;
-		case HttpMethod::PUT:
-			 name = "PUT";
-			 break;
-		case HttpMethod::CONNECT:
-			 name = "CONNECT";
-			 break;
-		case HttpMethod::OPTION:
-			 name = "OPTION";
-			 break;
-		case HttpMethod::TRACE:
-			 name = "TRACE";
-			 break;
-		default:
-			 name = "UNKNOWN";
-			
-	}
-	return name;
+std::string HttpMethodToString(const HttpMethod& method) {
+	switch(method) { 
+#define XX(method, name, desc) \
+			case HttpMethod::name: return #desc;
+		HTTP_METHOD_MAP(XX)
+#undef XX
+	}	
+	return "UNKNOWN";
 }
 
 const std::string HttpRequest::getHeader(const std::string& key, const std::string def) {
@@ -58,9 +34,55 @@ std::ostream& HttpRequest::toStream(std::ostream& os) {
 		<< path_ 
 		<< (query_.empty()	? "" : "?")
 		<< query_
-		<< (fragment_.empty() ? "" : "#") << " "
+		<< (fragment_.empty() ? "" : "#")
+		<< fragment_ << " "
 		<< "HTTP/" << major_version_ << "." << minor_version_
 		<< "\r\n";
+	//header
+	for (auto& header : headers_) {
+		os << header.first << ": " << header.second << "\r\n";
+	} 
+	if (!content_.empty()) {
+		os << "content-length: " << content_.size() << "\r\n";
+	}
+	//body
+	os << "\r\n" << content_;
+
+	return os;
+}
+
+const std::string HttpResponse::getHeader(const std::string& key, const std::string def) {
+	auto it = headers_.find(key);
+	return it == headers_.end() ? def : it->second;
+}
+
+void HttpResponse::setHeader(const std::string& key, const std::string& value) {
+	headers_[key] = value;
+}
+
+void HttpResponse::delHeader(const std::string& key) {
+	headers_.equal_range(key);
+}
+
+int HttpStatusToCode(const HttpStatus& status) {
+	return static_cast<int>(status);
+}
+
+std::string HttpStatusDesc(const HttpStatus& status) {
+	switch(status) {
+#define XX(code, name, desc) \
+			case HttpStatus::name: return #desc;
+			HTTP_STATUS_MAP(XX)
+#undef XX
+	}
+	return "UNKNOWN";
+}
+
+std::ostream& HttpResponse::toStream(std::ostream& os) {
+	//inital line
+	os << "HTTP/" << major_version_ << "." << minor_version_ << " "
+	 << HttpStatusToCode(status_) << " "
+	 << HttpStatusDesc(status_) << "\r\n";
 	//header
 	for (auto& header : headers_) {
 		os << header.first << ": " << header.second << "\r\n";
