@@ -5,6 +5,7 @@
 #include "CoroutineScheduler.h"
 #include "Socket.h"
 #include "SchedulerThread.h"
+#include "TcpConnection.h"
 
 #include <vector>
 
@@ -24,7 +25,7 @@ public:
 protected:
 	CoroutineScheduler* selectOneScheduler();
 	void onAccept();
-	virtual void handleClient(Socket::Ptr socket);
+	virtual void handleClient(TcpConnection::Ptr connection);
 
 	IpAddress listen_addr_;
 	int thread_num_;

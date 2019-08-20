@@ -35,7 +35,7 @@ void TcpServer::onAccept() {
 
 		CoroutineScheduler* scheduler = selectOneScheduler();
 		assert(scheduler != nullptr);
-		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<Socket>(connfd, scheduler)), "Connect");
+		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(connfd, scheduler)), "Connect");
 	}
 }
 
@@ -48,8 +48,9 @@ CoroutineScheduler* TcpServer::selectOneScheduler() {
 	}
 }
 
-void TcpServer::handleClient(Socket::Ptr socket) {
-	LOG_INFO << "handleClient:" << socket->fd();
+void TcpServer::handleClient(TcpConnection::Ptr connection) {
+	//todo
+	connection->shutdown();
 }
 
 }

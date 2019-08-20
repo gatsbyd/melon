@@ -1,10 +1,10 @@
-#ifndef _MELON_HTTP_REQUEST_H_
-#define _MELON_HTTP_REQUEST_H_
+#ifndef _MELON_HTTP__H_
+#define _MELON_HTTP__H_
 
 #include <map>
+#include <memory>
 
 namespace melon {
-
 namespace http {
 
 /* Request Methods */
@@ -127,7 +127,9 @@ enum class HttpStatus {
 };
 
 class HttpRequest {
+friend class HttpRequestParser;
 public:
+	typedef std::shared_ptr<HttpRequest> Ptr;
 	HttpRequest() :major_version_(1), minor_version_(1) {}
 	//get
 	HttpMethod getMethod() const { return method_; }
@@ -160,6 +162,7 @@ private:
 	HttpMethod method_;
 	std::string path_;
 	std::string query_;
+	std::map<std::string, std::string> parameters_;
 	std::string fragment_;
 	int major_version_;
 	int minor_version_;
@@ -169,6 +172,7 @@ private:
 
 class HttpResponse {
 public:
+	typedef std::shared_ptr<HttpResponse> Ptr;
 	HttpResponse() :major_version_(1), minor_version_(1) {}
 	//get
 	int getMajorVersion() const { return major_version_; }

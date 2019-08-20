@@ -11,13 +11,11 @@ public:
 
 	}
 protected:
-	void handleClient(Socket::Ptr socket) override {
-		int fd = socket->fd();
+	void handleClient(TcpConnection::Ptr conn) override {
 		char buffer[500];
 		int n;
-		while ((n = read(fd, buffer, sizeof buffer)) > 0) {
-			sleep(3);
-			write(fd, buffer, n);
+		while ((n = conn->read(buffer, sizeof buffer)) > 0) {
+			conn->write(buffer, n);
 		}
 		LOG_DEBUG << "close echo connection";
 	}
