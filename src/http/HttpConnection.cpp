@@ -8,16 +8,20 @@
 namespace melon {
 namespace http {
 
-static const size_t s_buffer_size = 4 * 1024 * 1024;
+static const size_t s_buffer_size = 4 * 1024;
+
+HttpConnection::HttpConnection(TcpConnection::Ptr tcp_conn)
+	:tcp_conn_(tcp_conn),
+	buffer_(new char[s_buffer_size], [](char* ptr) {
+												delete ptr;	
+											}) {
+}
 
 HttpRequest::Ptr HttpConnection::recvRequest() {
 	HttpRequestParser::Ptr parser = std::make_shared<HttpRequestParser>();
 	HttpRequest::Ptr request = std::make_shared<HttpRequest>();
-	std::unique_ptr<char, std::function<void (char*)>> buffer(
-					new char[s_buffer_size], [](char* ptr) {
-												delete ptr;	
-											});
-	char* data = buffer.get();
+
+	char* data = buffer_.get();
 	HttpParserResult result = HttpParserResult::INCOMPLETED;
 
 	do {

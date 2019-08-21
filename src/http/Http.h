@@ -144,6 +144,7 @@ public:
 
 	//set
 	void setMethod(HttpMethod method) { method_ = method; }
+	void setMethod(std::string method) { method_str_ = method; }
 	void setPath(const std::string& path) { path_ = path; }
 	void setQuery(const std::string& query) { query_ = query; }
 	void setFragment(const std::string& fragment) { fragment_ = fragment; }
@@ -160,9 +161,9 @@ public:
 
 private:
 	HttpMethod method_;
+	std::string method_str_;
 	std::string path_;
 	std::string query_;
-	std::map<std::string, std::string> parameters_;
 	std::string fragment_;
 	int major_version_;
 	int minor_version_;
