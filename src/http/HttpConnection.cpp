@@ -34,7 +34,6 @@ HttpRequest::Ptr HttpConnection::recvRequest() {
 
 		result = parser->parseRequest(*request, data, nread);
 		if (result > 0) {
-			//todo:read body
 			break;
 		} else if (result == -1) {
 			return nullptr;
