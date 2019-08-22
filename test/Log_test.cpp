@@ -9,12 +9,12 @@ using namespace melon;
 
 int main() {
 	//melon::Logger::setLogLevel(melon::LogLevel::INFO);
-	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	std::shared_ptr<AsyncFileAppender> file_appender = std::make_shared<AsyncFileAppender>("/tmp/log");	
 	file_appender->start();
 	Singleton<Logger>::getInstance()->addAppender("file", file_appender);
 
-	for (int i = 0; i < 1000000 * 3; i++) {
+	for (int i = 0; i < 1000 * 3; i++) {
 		LOG_DEBUG << "debug";
 		LOG_INFO << "info";
 		LOG_WARN << "warn";

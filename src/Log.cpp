@@ -19,10 +19,10 @@ const char* LogLevelName[] {
 
 LogLevel g_logLevel = LogLevel::DEBUG;
 
-LogEvent::LogEvent(time_t time, pid_t tid, LogLevel logLevel, 
+LogEvent::LogEvent(Timestamp timestamp, pid_t tid, LogLevel logLevel, 
 					const char* file_name,
 					int line) 
-	: time_(time), tid_(tid), logLevel_(logLevel), 
+	: timestamp_(timestamp), tid_(tid), logLevel_(logLevel), 
 		file_name_(file_name), line_(line) {
 }
 
@@ -38,7 +38,7 @@ LogWrapper::~LogWrapper() {
 	Singleton<Logger>::getInstance()->log(event_);
 	if (event_->logLevel_ == LogLevel::FATAL) {
 		//todo: flush asyncloging
-		sleep(10);
+		sleep(3);
 		abort();
 	}
 }
@@ -57,12 +57,14 @@ void Logger::setLogLevel(LogLevel logLevel) {
 std::string Logger::format(LogEvent::ptr event) {
 	std::ostringstream ss;
 	char buf[50];
-	time_t time = event->time_;
+	time_t sec = event->timestamp_.getSec();
+	suseconds_t nsec = event->timestamp_.getUsec();
 	struct tm tm;
-	localtime_r(&time, &tm);
+	localtime_r(&sec, &tm);
 	strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S", &tm);
 
 	ss << buf << " "
+	    << nsec << " "
 		<< event->tid_ << " "
 		<< LogLevelName[static_cast<int>(event->logLevel_)] << " "
 		<< event->content_.str() << " - "
@@ -139,10 +141,10 @@ size_t Buffer::length() const {
 	return cur_;
 }
 
-AsyncFileAppender::AsyncFileAppender(std::string basename, time_t persist_per_second) 
+AsyncFileAppender::AsyncFileAppender(std::string basename, time_t persist_period) 
 	:started_(false), 
 	running_(false),
-	persist_per_second_(persist_per_second), 
+	persist_period_(persist_period), 
 	basename_(basename),
 	cond_(mutex_) ,
 	countdown_latch_(1),
@@ -199,7 +201,7 @@ void AsyncFileAppender::threadFunc() {
 			MutexGuard gurd(mutex_);
 			//wake up every persist_per_seconds_ or on Buffer is full
 			if (buffers_.empty()) {
-				cond_.wait_seconds(persist_per_second_);
+				cond_.wait_seconds(persist_period_);
 			}
 			if (buffers_.empty() && cur_buffer_->length() == 0) {
 				continue;
@@ -217,7 +219,7 @@ void AsyncFileAppender::threadFunc() {
 			assert(cur_buffer_->length() == 0);
 		}
 
-		//if log is too large, drop
+		//if log is too large, drop it
 		if (persist_buffers.size() > 1) {
 			std::cerr << "log is too large, drop some" << std::endl;
 			persist_buffers.erase(persist_buffers.begin() + 1, persist_buffers.end());

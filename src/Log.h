@@ -14,6 +14,7 @@
 #include "Mutex.h"
 #include "Singleton.h"
 #include "Thread.h"
+#include "Timestamp.h"
 
 namespace melon {
 
@@ -25,15 +26,14 @@ friend class LogWrapper;
 
 public:
 	typedef std::shared_ptr<LogEvent> ptr;
-	LogEvent(time_t time, pid_t tid, LogLevel logLevel, 
+	LogEvent(Timestamp timestamp, pid_t tid, LogLevel logLevel, 
 					const char* file_name,
 					int line);
 	std::ostream& getStream();
 
 private:
-	time_t time_;
+	Timestamp timestamp_;
 	pid_t tid_;
-	//todo: fiber id
 	LogLevel logLevel_;
 	std::ostringstream content_;
 	std::string file_name_;
@@ -64,9 +64,11 @@ public:
 	void append(const std::string& log) override;
 };
 
+static const size_t kLogBufferSize = 1024 * 1024 * 10;
+
 class Buffer : public Noncopyable {
 public:
-	Buffer(size_t total = 1024 * 1024 * 100);
+	Buffer(size_t total = kLogBufferSize);
 	~Buffer();
 
 	void clear();
@@ -84,7 +86,7 @@ private:
 
 class AsyncFileAppender : public LogAppender {
 public:
-	AsyncFileAppender(std::string basename, time_t persist_per_second = 3);
+	AsyncFileAppender(std::string basename, time_t persist_period = 3);
 	~AsyncFileAppender();
 	void append(const std::string& log) override;
 	void start();
@@ -95,7 +97,7 @@ private:
 	
 	bool started_;
 	bool running_;
-	time_t persist_per_second_;
+	time_t persist_period_;
 	std::string basename_;
 	Mutex mutex_;
 	Condition cond_;
@@ -144,20 +146,20 @@ template class Singleton<Logger>;
 }
 
 #define LOG_DEBUG if (melon::Logger::getLogLevel() <= melon::LogLevel::DEBUG) \
-													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::DEBUG, \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(melon::Timestamp::now(), melon::Thread::CurrentThreadTid(), melon::LogLevel::DEBUG, \
 									__FILE__, __LINE__))).getStream()
 
 #define LOG_INFO if (melon::Logger::getLogLevel() <= melon::LogLevel::INFO) \
-													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::INFO, \
+													  melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(melon::Timestamp::now(), melon::Thread::CurrentThreadTid(), melon::LogLevel::INFO, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_WARN melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::WARN, \
+#define LOG_WARN melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(melon::Timestamp::now(), melon::Thread::CurrentThreadTid(), melon::LogLevel::WARN, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_ERROR melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::ERROR, \
+#define LOG_ERROR melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(melon::Timestamp::now(), melon::Thread::CurrentThreadTid(), melon::LogLevel::ERROR, \
 									__FILE__, __LINE__))).getStream()
 
-#define LOG_FATAL melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(time(nullptr), melon::Thread::CurrentThreadTid(), melon::LogLevel::FATAL, \
+#define LOG_FATAL melon::LogWrapper(melon::LogEvent::ptr(new melon::LogEvent(melon::Timestamp::now(), melon::Thread::CurrentThreadTid(), melon::LogLevel::FATAL, \
 									__FILE__, __LINE__))).getStream()
 
 #endif
