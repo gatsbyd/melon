@@ -18,8 +18,10 @@ public:
 
 private:
 	std::string getFileName();
+	static const int kMaxFileSize = 1024 * 1024 * 1024;
 
 	std::string basename_;
+	int bytes_writed_;
 	FILE* fp_;
 };
 
