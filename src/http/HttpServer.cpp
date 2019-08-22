@@ -11,14 +11,14 @@ HttpServer::HttpServer(const IpAddress& listen_addr,
 void HttpServer::handleClient(TcpConnection::Ptr conn) {
 	HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);
 
-	do {
-		auto req = http_conn->recvRequest();
+	auto req = http_conn->recvRequest();
 
-		HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
-		http_conn->sendResponse(rsp);
+	HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
+	http_conn->sendResponse(rsp);
 
-		//todo
-	} while(true);
+	//todo
+	
+		
 }
 
 }

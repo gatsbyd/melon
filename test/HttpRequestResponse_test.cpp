@@ -1,4 +1,4 @@
-#include "http/HttpRequest.h"
+#include "http/Http.h"
 
 #include <iostream>
 
@@ -13,7 +13,7 @@ void testRequest() {
 	request.setHeader("Accept-Language", "en-US,en;q=0.8");
 	request.setContent("this is body");
 
-	request.toStream(std::cout);
+	std::cout << request.toString();
 }
 
 void tesetResponse() {

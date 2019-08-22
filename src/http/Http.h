@@ -118,12 +118,14 @@ enum class HttpMethod {
 #define XX(num, name, string) name = num,
     HTTP_METHOD_MAP(XX)
 #undef XX
+	UNKNOWN
 };
 
 enum class HttpStatus {
 #define XX(code, name, desc) name = code,
     HTTP_STATUS_MAP(XX)
 #undef XX
+	UNKNOWN
 };
 
 class HttpRequest {
@@ -144,7 +146,7 @@ public:
 
 	//set
 	void setMethod(HttpMethod method) { method_ = method; }
-	void setMethod(std::string method) { method_str_ = method; }
+	void setMethod(std::string method);
 	void setPath(const std::string& path) { path_ = path; }
 	void setQuery(const std::string& query) { query_ = query; }
 	void setFragment(const std::string& fragment) { fragment_ = fragment; }
@@ -158,10 +160,10 @@ public:
 	void delHeader(const std::string& key);
 
 	std::ostream& toStream(std::ostream& stream);
+	std::string toString();
 
 private:
 	HttpMethod method_;
-	std::string method_str_;
 	std::string path_;
 	std::string query_;
 	std::string fragment_;
@@ -195,6 +197,7 @@ public:
 	void delHeader(const std::string& key);
 
 	std::ostream& toStream(std::ostream& stream);
+	std::string toString();
 private:
 	int major_version_;
 	int minor_version_;

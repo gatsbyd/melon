@@ -1,6 +1,7 @@
 #include "http/Http.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace melon {
 namespace http {
@@ -11,8 +12,21 @@ std::string HttpMethodToString(const HttpMethod& method) {
 			case HttpMethod::name: return #desc;
 		HTTP_METHOD_MAP(XX)
 #undef XX
+			default: return "UNKNOWN";
 	}	
-	return "UNKNOWN";
+}
+
+//todo: slow
+HttpMethod StringToHttpMethod(const std::string& str) {
+#define XX(method, name, desc) \
+		if (#name == str) return HttpMethod::name;
+		HTTP_METHOD_MAP(XX)
+#undef XX
+	return HttpMethod::UNKNOWN;
+}
+
+void HttpRequest::setMethod(std::string method) { 
+	setMethod(StringToHttpMethod(method));
 }
 
 const std::string HttpRequest::getHeader(const std::string& key, const std::string def) {
@@ -32,7 +46,7 @@ std::ostream& HttpRequest::toStream(std::ostream& os) {
 	//inital line
 	os << HttpMethodToString(method_) << " "
 		<< path_ 
-		<< (query_.empty()	? "" : "?")
+		<< (query_.empty() ? "" : "?")
 		<< query_
 		<< (fragment_.empty() ? "" : "#")
 		<< fragment_ << " "
@@ -51,6 +65,11 @@ std::ostream& HttpRequest::toStream(std::ostream& os) {
 	return os;
 }
 
+std::string HttpRequest::toString() {
+	std::stringstream ss;
+	toStream(ss);
+	return ss.str();
+}
 const std::string HttpResponse::getHeader(const std::string& key, const std::string def) {
 	auto it = headers_.find(key);
 	return it == headers_.end() ? def : it->second;
@@ -74,8 +93,8 @@ std::string HttpStatusDesc(const HttpStatus& status) {
 			case HttpStatus::name: return #desc;
 			HTTP_STATUS_MAP(XX)
 #undef XX
+			default: return "UNKNOWN";
 	}
-	return "UNKNOWN";
 }
 
 std::ostream& HttpResponse::toStream(std::ostream& os) {
@@ -94,6 +113,12 @@ std::ostream& HttpResponse::toStream(std::ostream& os) {
 	os << "\r\n" << content_;
 
 	return os;
+}
+
+std::string HttpResponse::toString() {
+	std::stringstream ss;
+	toStream(ss);
+	return ss.str();
 }
 
 }

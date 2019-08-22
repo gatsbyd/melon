@@ -1,5 +1,6 @@
 #include "http/HttpParser.h"
 #include "http/picohttpparser.h"
+#include "Log.h"
 
 namespace melon {
 namespace http {
@@ -35,17 +36,22 @@ int HttpParser::parseRequest(HttpRequest& request, const char* buf, size_t len) 
 			request.setPath(path_query_fragment);
 		}
 		//query
-		if (query_start != std::string::npos) {
-			request.setQuery(path_query_fragment.substr(query_start, fragment_start));
+		if (query_start != std::string::npos && query_start + 1 != path_query_fragment.size()) {
+			if (fragment_start != std::string::npos) {
+				request.setQuery(path_query_fragment.substr(query_start + 1, fragment_start - query_start - 1));
+			} else {
+				request.setQuery(path_query_fragment.substr(query_start + 1));
+			}
 		}
 		//fragment
-		if (fragment_start != std::string::npos) {
-			request.setFragment(path_query_fragment.substr(fragment_start));
+		if (fragment_start != std::string::npos && fragment_start + 1 != path_query_fragment.size()) {
+			request.setFragment(path_query_fragment.substr(fragment_start + 1));
 		}
 		//minor_version
 		request.setMinorVersion(minor_version);
 		//headers
-		for (const struct phr_header header : headers) {
+		for (size_t i = 0; i < num_headers; ++i) {
+			const phr_header& header = headers[i];
 			request.setHeader(std::string(header.name, header.name_len), std::string(header.value, header.value_len));
 		}
 	} 
