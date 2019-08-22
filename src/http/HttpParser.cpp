@@ -54,6 +54,12 @@ int HttpParser::parseRequest(HttpRequest& request, const char* buf, size_t len) 
 			const phr_header& header = headers[i];
 			request.setHeader(std::string(header.name, header.name_len), std::string(header.value, header.value_len));
 		}
+		//body
+		int content_len = atoi(request.getHeader("Content-Length", "0").c_str());
+		if (content_len != 0) {
+			request.setContent(std::string(buf + ret, buf + ret + content_len));
+			ret += content_len;
+		}
 	} 
 	return ret;
 }

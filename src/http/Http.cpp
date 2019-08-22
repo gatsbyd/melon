@@ -56,9 +56,6 @@ std::ostream& HttpRequest::toStream(std::ostream& os) {
 	for (auto& header : headers_) {
 		os << header.first << ": " << header.second << "\r\n";
 	} 
-	if (!content_.empty()) {
-		os << "content-length: " << content_.size() << "\r\n";
-	}
 	//body
 	os << "\r\n" << content_;
 
@@ -106,9 +103,6 @@ std::ostream& HttpResponse::toStream(std::ostream& os) {
 	for (auto& header : headers_) {
 		os << header.first << ": " << header.second << "\r\n";
 	} 
-	if (!content_.empty()) {
-		os << "content-length: " << content_.size() << "\r\n";
-	}
 	//body
 	os << "\r\n" << content_;
 
