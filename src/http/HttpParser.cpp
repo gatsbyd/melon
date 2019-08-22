@@ -13,7 +13,7 @@ int HttpParser::parseRequest(HttpRequest& request, const char* buf, size_t len) 
 	size_t path_len;
 	int minor_version;
 	struct phr_header headers[kMaxHeadersNum];
-	int num_headers = kMaxHeadersNum;
+	size_t num_headers = kMaxHeadersNum;
 
 	int ret = phr_parse_request(buf, len, 
 				&method, &method_len, 

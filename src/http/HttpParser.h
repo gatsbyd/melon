@@ -8,6 +8,7 @@
 namespace melon {
 namespace http {
 
+
 class HttpParser {
 public:
 	typedef std::shared_ptr<HttpParser> Ptr;

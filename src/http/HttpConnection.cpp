@@ -1,5 +1,5 @@
 #include "http/HttpConnection.h"
-#include "http/HttpRequestParser.h"
+#include "http/HttpParser.h"
 #include "Log.h"
 
 #include <sstream>
@@ -18,27 +18,28 @@ HttpConnection::HttpConnection(TcpConnection::Ptr tcp_conn)
 }
 
 HttpRequest::Ptr HttpConnection::recvRequest() {
-	HttpRequestParser::Ptr parser = std::make_shared<HttpRequestParser>();
+	HttpParser::Ptr parser = std::make_shared<HttpParser>();
 	HttpRequest::Ptr request = std::make_shared<HttpRequest>();
 
 	char* data = buffer_.get();
-	HttpParserResult result = HttpParserResult::INCOMPLETED;
+	int result = -1;
+	int nread = 0;
 
 	do {
-		int n = tcp_conn_->read(data, s_buffer_size);
-		if (n < 0) {
+		nread = tcp_conn_->read(data + nread, s_buffer_size - nread);
+		if (nread < 0) {
 			LOG_ERROR << "read < 0";
 		   	return nullptr;
 		}
-		if (n == 0 && result == HttpParserResult::INCOMPLETED) {
-			return nullptr;
-		}
-		result = parser->parse(*request, data, data + n);
-		if (result == HttpParserResult::COMPLETED) {
+
+		result = parser->parseRequest(*request, data, nread);
+		if (result > 0) {
+			//todo:read body
 			break;
-		} else if (result == HttpParserResult::ERROR) {
+		} else if (result == -1) {
 			return nullptr;
 		}
+
 	} while(true);
 
 	return request;
@@ -48,7 +49,7 @@ void HttpConnection::sendResponse(HttpResponse::Ptr response) {
 	std::stringstream ss;
 	response->toStream(ss);
 	std::string rsp = ss.str();
-	tcp_conn_->writeFixSize(rsp.c_str(), rsp.size());
+	tcp_conn_->writen(rsp.c_str(), rsp.size());
 }
 
 }

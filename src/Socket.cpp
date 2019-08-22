@@ -89,6 +89,20 @@ void Socket::setKeepAlive(bool on) {
 	}
 }
 
+ssize_t Socket::read(void *buf, size_t count) {
+	return ::read(fd_, buf, count);
+}
+
+ssize_t Socket::write(const void *buf, size_t count) {
+	return ::write(fd_, buf, count);
+}	
+
+void Socket::shutdownWrite() {
+	if (::shutdown(fd_, SHUT_WR) < 0) {
+		LOG_ERROR << "socket:shutdownWrite:" << strerror(errno);
+	}
+}
+
 void Socket::SetNonBlockAndCloseOnExec(int fd) {
 	int flags = ::fcntl(fd, F_GETFL, 0);
 	flags |= O_NONBLOCK;
