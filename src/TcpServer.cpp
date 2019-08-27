@@ -17,9 +17,9 @@ TcpServer::TcpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> sc
 
 void TcpServer::start(size_t thread_num) {
 	listen_socket_.listen();
-	scheduler_->start(thread_num);
 
 	scheduler_->addTask(std::bind(&TcpServer::onAccept, this), "Accept");
+	scheduler_->start(thread_num);
 }
 
 void TcpServer::onAccept() {

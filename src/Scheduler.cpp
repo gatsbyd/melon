@@ -7,8 +7,11 @@
 
 namespace melon {
 
-Scheduler::Scheduler() {
+Scheduler::Scheduler()
+	:main_processer_(this),
+	 timer_manager_(new TimerManager()){
 	//todo:线程安全
+	processers_.push_back(&main_processer_);
 }
 
 Scheduler::~Scheduler() {
@@ -18,9 +21,7 @@ Scheduler::~Scheduler() {
 void Scheduler::start(size_t thread_number) {
 	assert(thread_number > 0);
 
-	Processer main_processer(this);
-	processers_.push_back(&main_processer);
-	
+
 	for (size_t i = 0; i < thread_number - 1; ++i) {
 		threads_.push_back(std::make_shared<SchedulerThread>(this));
 		processers_.push_back(threads_.back()->startSchedule());
@@ -28,15 +29,15 @@ void Scheduler::start(size_t thread_number) {
 
 	timer_thread_ = std::make_shared<SchedulerThread>(this);
 	timer_processer_ = timer_thread_->startSchedule();
+
 	timer_processer_->addTask([&]() {
 						//todo:1.无限循环 2.线程安全
 						while (true) {
 							timer_manager_->dealWithExpiredTimer();
 						}
 					}, "timer");
-
 	assert(thread_number == processers_.size());
-	main_processer.run();
+	main_processer_.run();
 }
 
 void Scheduler::stop() {

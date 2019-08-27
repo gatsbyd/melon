@@ -1,6 +1,7 @@
 #include "Processer.h"
 #include "Log.h"
 #include "TimerManager.h"
+#include "Hook.h"
 
 #include <assert.h>
 #include <unistd.h>
@@ -14,6 +15,7 @@ int createTimerFd() {
 		LOG_FATAL << "timerfd_create:" << strerror(errno);
 	}
 
+	LOG_DEBUG << "create tiemrfd " << timerfd;
 	return timerfd;
 }
 

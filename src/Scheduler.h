@@ -4,13 +4,13 @@
 #include "Noncopyable.h"
 #include "Coroutine.h"
 #include "ProcesserThread.h"
+#include "Processer.h"
 #include "Timestamp.h"
 
 #include <vector>
 
 namespace melon {
 	
-class Processer;
 class TimerManager;
 
 class Scheduler : public Noncopyable {
@@ -28,9 +28,12 @@ protected:
 	virtual Processer* pickOneProcesser();
 private:
 	bool stop_ = false;
+	Processer main_processer_;
 	std::vector<Processer*> processers_;
 	std::vector<SchedulerThread::Ptr> threads_;
 
+
+	//单独一个线程处理任务
 	Processer* timer_processer_;
 	SchedulerThread::Ptr timer_thread_;
 	std::unique_ptr<TimerManager> timer_manager_;
