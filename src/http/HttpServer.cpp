@@ -5,9 +5,8 @@
 namespace melon {
 namespace http {
 
-HttpServer::HttpServer(const IpAddress& listen_addr,
-				int thread_num)
-		:TcpServer(listen_addr, thread_num) {}
+HttpServer::HttpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> scheduler)
+		:TcpServer(listen_addr, scheduler) {}
 
 void HttpServer::handleClient(TcpConnection::Ptr conn) {
 	HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);

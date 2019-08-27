@@ -1,56 +1,41 @@
-#include "TcpServer.h"
 #include "Log.h"
+#include "Scheduler.h"
+#include "TcpServer.h"
 
 #include <assert.h>
 
+
 namespace melon {
 
-TcpServer::TcpServer(const IpAddress& listen_addr, int thread_num)
+TcpServer::TcpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> scheduler)
 	:listen_addr_(listen_addr),
-	thread_num_(thread_num),
-	listen_socket_(Socket::CreateSocket(), &accept_scheduler_) {
+	listen_socket_(Socket::CreateSocket()),
+	scheduler_(scheduler) {
 
 	listen_socket_.bind(listen_addr_);
-
-	for (int i = 0; i < thread_num; i++) {
-		thread_pool_.push_back(SchedulerThread::Ptr(new SchedulerThread()));
-	}
 }
 
-void TcpServer::start() {
+void TcpServer::start(size_t thread_num) {
 	listen_socket_.listen();
+	scheduler_->start(thread_num);
 
-	for (auto& thread : thread_pool_) {
-		connect_scheduler_.push_back(thread->startSchedule());
-	}
-	accept_scheduler_.schedule(std::bind(&TcpServer::onAccept, this), "Accept");
-	accept_scheduler_.run();
+	scheduler_->addTask(std::bind(&TcpServer::onAccept, this), "Accept");
 }
 
 void TcpServer::onAccept() {
+	//todo
 	while (true) {
 		IpAddress peer_addr;
 		int connfd = listen_socket_.accept(peer_addr);
 		LOG_INFO << "new connection fd:" << connfd;
 
-		CoroutineScheduler* scheduler = selectOneScheduler();
-		assert(scheduler != nullptr);
-		Socket::Ptr socket = std::make_shared<Socket>(connfd, scheduler);
-		scheduler->schedule(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
-	}
-}
-
-CoroutineScheduler* TcpServer::selectOneScheduler() {
-	if (thread_num_ <= 0) {
-		return &accept_scheduler_;
-	} else {
-		static int i = 0;
-		return connect_scheduler_[i++ % connect_scheduler_.size()];
+		Socket::Ptr socket = std::make_shared<Socket>(connfd);
+		scheduler_->addTask(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
 	}
 }
 
 void TcpServer::handleClient(TcpConnection::Ptr connection) {
-	//todo
+	//todo:打印对端地址
 	connection->shutdown();
 }
 

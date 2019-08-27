@@ -18,7 +18,7 @@ void test() {
 int main() {
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
-	const int sz = 100000;
+	const int sz = 1000;
 	std::vector<Coroutine::Ptr> coroutines;
 	for (int i = 0; i < sz; ++i) {
 		coroutines.push_back(std::make_shared<Coroutine>(test));

@@ -11,7 +11,7 @@
 
 namespace melon {
 
-class CoroutineScheduler;
+class Processer;
 
 class Poller : public Noncopyable {
 public:
@@ -34,19 +34,20 @@ protected:
 
 class PollPoller : public Poller {
 public:
-	PollPoller(CoroutineScheduler* scheduler);
+	PollPoller(Processer* scheduler);
 
 	void updateEvent(int fd, int events, Coroutine::Ptr coroutine) override;
 	void removeEvent(int fd) override;
 
 	void poll(int timeout) override;
-	bool isPoliing() { return is_polling; }
+	bool isPolling() { return is_polling; }
 private:
+
 	bool is_polling;
 	std::vector<struct pollfd> pollfds_;
 	std::map<int, Coroutine::Ptr> fd_to_coroutine_;
 	std::map<int, size_t> fd_to_index_;
-	CoroutineScheduler* scheduler_;
+	Processer* processer_;
 };
 
 }

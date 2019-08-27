@@ -1,8 +1,9 @@
 #include "Coroutine.h"
-#include "CoroutineScheduler.h"
-#include "Timestamp.h"
+#include "Processer.h"
 #include "Hook.h"
 #include "Log.h"
+#include "Timestamp.h"
+#include "Scheduler.h"
 
 #include "assert.h"
 #include <dlfcn.h>
@@ -13,7 +14,7 @@
 namespace melon {
 
 #define DLSYM(name) \
-		name ## _origin = (name ## _func)::dlsym(RTLD_NEXT, #name);
+		name ## _f = (name ## _t)::dlsym(RTLD_NEXT, #name);
 
 struct HookIniter {
 	HookIniter() {
@@ -40,6 +41,12 @@ static HookIniter hook_initer;
 template<typename OriginFun, typename... Args>
 static ssize_t ioHook(int fd, OriginFun origin_func, int event, Args&&... args) {
 	ssize_t n;
+
+	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
+	if (!processer) {
+		origin_func(fd, std::forward<Args>(args)...);
+	}
+
 retry:
 	do {
 		n = origin_func(fd, std::forward<Args>(args)...);
@@ -47,17 +54,12 @@ retry:
 
 	//todo:记得去掉EINVAL
 	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINVAL)) {
-		melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
-		if (!scheduler) {
-			LOG_FATAL << "call hooked api in non io thread";
-		}
 
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
-		scheduler->updateEvent(fd, event, melon::Coroutine::GetCurrentCoroutine());
-		melon::Coroutine::Yield();
-		//清除事件
-		scheduler->updateEvent(fd, melon::Poller::kNoneEvent);
-		
+		processer->updateEvent(fd, event, melon::Coroutine::GetCurrentCoroutine());
+		melon::Coroutine::GetCurrentCoroutine()->setState(melon::CoroutineState::BLOCKED);
+		melon::Coroutine::SwapOut();
+
 		goto retry;
 	}
 
@@ -66,7 +68,7 @@ retry:
 
 extern "C" {
 #define HOOK_INIT(name) \
-		name ## _func name ## _origin = nullptr;
+		name ## _t name ## _f = nullptr;
 
 HOOK_INIT(sleep)
 HOOK_INIT(accept)
@@ -85,65 +87,68 @@ HOOK_INIT(sendmsg)
 
 
 unsigned int sleep(unsigned int seconds) {
-	melon::CoroutineScheduler* scheduler = melon::CoroutineScheduler::GetSchedulerOfThisThread();
-	if (!scheduler) {
-		LOG_FATAL << "call hooked api in non io thread";
+	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
+	if (!processer) {
+		sleep_f(seconds);
 	}
 
-	scheduler->scheduleAt(melon::Timestamp::now() + seconds * melon::Timestamp::kMicrosecondsPerSecond, melon::Coroutine::GetCurrentCoroutine());
-	melon::Coroutine::Yield();
+	melon::Scheduler* scheduler = processer->getScheduler();
+	assert(scheduler != nullptr);
+	scheduler->runAt(melon::Timestamp::now() + seconds * melon::Timestamp::kMicrosecondsPerSecond, melon::Coroutine::GetCurrentCoroutine());
+	melon::Coroutine::SwapOut();
 	return 0;
 }
 
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-	return ioHook(sockfd, accept_origin, melon::Poller::kReadEvent, addr, addrlen);
+	return ioHook(sockfd, accept_f, melon::Poller::kReadEvent, addr, addrlen);
 }
 
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
-	return ioHook(sockfd, accept4_origin, melon::Poller::kReadEvent, addr, addrlen, flags);
+	return ioHook(sockfd, accept4_f, melon::Poller::kReadEvent, addr, addrlen, flags);
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-	return ioHook(fd, read_origin, melon::Poller::kReadEvent, buf, count);
+	LOG_DEBUG << "read fd:" << fd;
+	return ioHook(fd, read_f, melon::Poller::kReadEvent, buf, count);
 }
 
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt) {
-	return ioHook(fd, readv_origin, melon::Poller::kReadEvent, iov, iovcnt);
+	return ioHook(fd, readv_f, melon::Poller::kReadEvent, iov, iovcnt);
 }
 
 ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
-	return ioHook(sockfd, recv_origin, melon::Poller::kReadEvent, buf, len, flags);
+	return ioHook(sockfd, recv_f, melon::Poller::kReadEvent, buf, len, flags);
 }
 
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, 
 				struct sockaddr *src_addr, socklen_t *addrlen) {
-	return ioHook(sockfd, recvfrom_origin, melon::Poller::kReadEvent, buf, len, flags, src_addr, addrlen);
+	return ioHook(sockfd, recvfrom_f, melon::Poller::kReadEvent, buf, len, flags, src_addr, addrlen);
 }
 
 ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags) {
-	return ioHook(sockfd, recvmsg, melon::Poller::kReadEvent, msg, flags);
+	return ioHook(sockfd, recvmsg_f, melon::Poller::kReadEvent, msg, flags);
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-	return ioHook(fd, write_origin, melon::Poller::kWriteEvent, buf, count);
+	return ioHook(fd, write_f, melon::Poller::kWriteEvent, buf, count);
 }
 
 
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
-	return ioHook(fd, writev_origin, melon::Poller::kWriteEvent, iov, iovcnt);
+	return ioHook(fd, writev_f, melon::Poller::kWriteEvent, iov, iovcnt);
 }
 
 ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
-	return ioHook(sockfd, send_origin, melon::Poller::kWriteEvent, buf, len, flags);
+	return ioHook(sockfd, send_f, melon::Poller::kWriteEvent, buf, len, flags);
 }
 
 ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, 
 		const struct sockaddr *dest_addr, socklen_t addrlen) {
-	return ioHook(sockfd, sendto_origin, melon::Poller::kWriteEvent, buf, len, flags, dest_addr, addrlen);
+	return ioHook(sockfd, sendto_f, melon::Poller::kWriteEvent, buf, len, flags, dest_addr, addrlen);
 }
 
 ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags) {
-	return ioHook(sockfd, sendmsg_origin, melon::Poller::kWriteEvent, msg, flags);	
+	return ioHook(sockfd, sendmsg_f, melon::Poller::kWriteEvent, msg, flags);	
 }
 
 }

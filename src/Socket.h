@@ -6,14 +6,14 @@
 namespace melon {
 
 class IpAddress;
-class CoroutineScheduler;
+class Processer;
 
 class Socket {
 public:
 	typedef std::shared_ptr<Socket> Ptr;
 
-	explicit Socket(int fd, CoroutineScheduler* scheduler) 
-		:fd_(fd), scheduler_(scheduler) {}
+	explicit Socket(int fd) 
+		:fd_(fd) {}
 	~Socket();
 
 	void bind(const IpAddress& local);
@@ -35,7 +35,6 @@ public:
 	static int CreateSocket();
 private:
 	int fd_;
-	CoroutineScheduler* scheduler_;
 };
 
 }

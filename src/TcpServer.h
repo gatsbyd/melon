@@ -2,9 +2,8 @@
 #define _MELON_TCP_SERVER_H_
 
 #include "Address.h"
-#include "CoroutineScheduler.h"
+#include "Noncopyable.h"
 #include "Socket.h"
-#include "SchedulerThread.h"
 #include "TcpConnection.h"
 
 #include <vector>
@@ -12,28 +11,25 @@
 namespace melon {
 	
 class IpAddress;
+class Scheduler;
 
 class TcpServer : public Noncopyable {
 public:
 	//todo:
-	TcpServer(const IpAddress& listen_addr, int thread_num = 0);
+	TcpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> scheduler);
 	~TcpServer() {}
 	
 	//todo:
-	void start();
+	void start(size_t thread_num = 1);
 
 protected:
-	CoroutineScheduler* selectOneScheduler();
 	void onAccept();
 	virtual void handleClient(TcpConnection::Ptr connection);
 
 	IpAddress listen_addr_;
-	int thread_num_;
 	Socket listen_socket_;
-	CoroutineScheduler accept_scheduler_;
-	std::vector<SchedulerThread::Ptr> thread_pool_;
-	std::vector<CoroutineScheduler*> connect_scheduler_;
 
+	std::shared_ptr<Scheduler> scheduler_;
 };
 
 }

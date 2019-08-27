@@ -1,4 +1,4 @@
-#include "CoroutineScheduler.h"
+#include "Processer.h"
 #include "Hook.h"
 #include "Log.h"
 
@@ -9,7 +9,6 @@
 
 namespace melon {
 
-static __thread CoroutineScheduler* t_scheduleInThisThread = nullptr;
 
 //todo:
 const int kPollTimeMs = -10000;
@@ -22,49 +21,35 @@ static int createEventFd() {
 	return event_fd;
 }
 
-CoroutineScheduler::CoroutineScheduler()
-	:started_(false),
-	mutex_(),
+Processer::Processer(Scheduler* scheduler)
+	:mutex_(),
+	scheduler_(scheduler),
 	poller_(this),
-	timer_manager_(this),
 	event_fd_(createEventFd()) {
-	
-	if (t_scheduleInThisThread != nullptr) {
-		LOG_FATAL << "create two Scheduler in one thread";
-	} else {
-		t_scheduleInThisThread = this;
-	}
 
 	//当有新事件到来时唤醒poll协程
-	
-	schedule([&](){
-				while (true) {
+	addTask([&](){
+				while (!stop_) {
 					if (comsumeWakeEvent() < 0) {
 						LOG_ERROR << "read eventfd:" << strerror(errno);
 						break;
 					}
 				}
 			}, "Wake");
-
-	schedule([&](){
-				while (true) {
-					if (timer_manager_.readTimerFd() < 0) {
-						LOG_ERROR << "read timerfd:" << strerror(errno);
-						break;
-					}
-					timer_manager_.dealWithExpiredTimer();
-				}
-			}, "Timer");
 }
 
 
-void CoroutineScheduler::run() {
-	started_ = true;
+void Processer::run() {
+	if (GetProcesserOfThisThread() != nullptr) {
+		LOG_FATAL << "run two processer in one thread";
+	} else {
+		GetProcesserOfThisThread() = this;
+	}
 	Coroutine::Ptr cur;
 
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
-	while (started_) {
+	while (!stop_) {
 		{
 			MutexGuard guard(mutex_);
 			//没有协程时执行poll协程
@@ -74,45 +59,52 @@ void CoroutineScheduler::run() {
 				for (auto it = coroutines_.begin();
 						it != coroutines_.end();
 							++it) {
-					//todo:条件
-					//引入优先级的概念
 					cur = *it;
 					coroutines_.erase(it);
 					break;
 				}
 			}
-
 		}
-		cur->resume();
+		cur->setState(CoroutineState::RUNNABLE);
+		cur->swapIn();
+		if (cur->getState() == CoroutineState::TERMINATED) {
+			load_--;
+		}
 	}
 }
 
-void CoroutineScheduler::schedule(Coroutine::Ptr coroutine) {
+void Processer::addTask(Coroutine::Ptr coroutine) {
 	MutexGuard guard(mutex_);
 	coroutines_.push_back(coroutine);
+	if (coroutine->getState() == CoroutineState::INIT) {
+		load_++;
+	}
 
-	if (poller_.isPoliing()) {
+	if (poller_.isPolling()) {
 		wakeupPollCoroutine();
 	}
 }
 
-void CoroutineScheduler::schedule(Coroutine::Func func, std::string name) {
-	schedule(std::make_shared<Coroutine>(std::move(func), name));
+void Processer::addTask(Coroutine::Func func, std::string name) {
+	addTask(std::make_shared<Coroutine>(std::move(func), name));
 }
 
-void CoroutineScheduler::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
+void Processer::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
 	poller_.updateEvent(fd, events, coroutine);
 }
 	
-void CoroutineScheduler::removeEvent(int fd) {
+void Processer::removeEvent(int fd) {
 	poller_.removeEvent(fd);
 }
 
-void CoroutineScheduler::stop() {
-	started_ = false;
+void Processer::stop() {
+	stop_ = true;
+	if (poller_.isPolling()) {
+		wakeupPollCoroutine();
+	}
 }
 
-void CoroutineScheduler::wakeupPollCoroutine() {
+void Processer::wakeupPollCoroutine() {
 	uint64_t buffer = 1;
 	ssize_t n = ::write(event_fd_, &buffer, sizeof buffer);
 	if (n != sizeof buffer) {
@@ -120,7 +112,7 @@ void CoroutineScheduler::wakeupPollCoroutine() {
 	}
 }
 
-ssize_t CoroutineScheduler::comsumeWakeEvent() {
+ssize_t Processer::comsumeWakeEvent() {
 	uint64_t buffer = 1;
 	ssize_t n = ::read(event_fd_, &buffer, sizeof buffer);
 	if (n != sizeof buffer) {
@@ -129,13 +121,9 @@ ssize_t CoroutineScheduler::comsumeWakeEvent() {
 	return n;
 }
 
-//一段时间后执行指定协程
-void CoroutineScheduler::scheduleAt(Timestamp when, Coroutine::Ptr coroutine) {
-	timer_manager_.addTimer(when, coroutine);
-}
-
-CoroutineScheduler* CoroutineScheduler::GetSchedulerOfThisThread() {
-	return t_scheduleInThisThread;
+Processer*& Processer::GetProcesserOfThisThread() {
+	static __thread Processer* t_processer = nullptr;
+	return t_processer;
 }
 
 }

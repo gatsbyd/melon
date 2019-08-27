@@ -9,20 +9,17 @@
 
 namespace melon {
 
-static thread_local std::atomic<uint64_t> s_coroutine_id {0};
-static thread_local Coroutine::Ptr s_cur_coroutine;
-static thread_local Coroutine::Ptr s_main_coroutine;
+static thread_local uint64_t t_coroutine_id {0};
 
 Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
-	:c_id_(++s_coroutine_id), 
-	name_(name + "_" + std::to_string(c_id_)),
+	:c_id_(++t_coroutine_id), 
+	name_(name + "-" + std::to_string(c_id_)),
 	cb_(std::move(cb)),
 	stack_size_(stack_size),
 	state_(CoroutineState::INIT) {
 	assert(stack_size > 0);
 	
 	LOG_DEBUG << "create coroutine:" << name_;
-	//todo:统一分配函数
 	stack_ = malloc(stack_size_);
 	if (!stack_) {
 		LOG_ERROR << "run out of memory";
@@ -40,7 +37,7 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 }
 
 Coroutine::Coroutine()
-	:c_id_(++s_coroutine_id),
+	:c_id_(++t_coroutine_id),
 	name_("Main_" + std::to_string(c_id_)),
 	state_(CoroutineState::INIT) {
 	LOG_DEBUG << "create coroutine:" << name_;
@@ -54,79 +51,75 @@ Coroutine::Coroutine()
 Coroutine::~Coroutine() {
 	LOG_DEBUG << "destroy coroutine:" << name_;
 	if (stack_) {
-		//todo:
 		free(stack_);
 	}
 	//todo:设置当前协程
 }
 
 //挂起当前正在执行的协程，切换到主协程执行，必须在非主协程调用
-void Coroutine::Yield() {
-	assert(s_cur_coroutine != nullptr);
-	if (s_cur_coroutine == s_main_coroutine) {
+void Coroutine::SwapOut() {
+	assert(GetCurrentCoroutine() != nullptr);
+
+	if (GetCurrentCoroutine() == GetMainCoroutine()) {
 		return;
 	}
 
 	//这里不能用智能指针，因为swapcontext切到别的协程时局部对象不会被回收，当协程执行完毕后，swapcontext之后的语句不会被执行
-	Coroutine* old_coroutine = s_cur_coroutine.get();
-	s_cur_coroutine = s_main_coroutine;
+	Coroutine* old_coroutine = GetCurrentCoroutine().get();
+	GetCurrentCoroutine() = GetMainCoroutine();
 
-	LOG_DEBUG << "swap coroutine:" << s_cur_coroutine->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
 
-	if (swapcontext(&(old_coroutine->context_), &(s_cur_coroutine->context_))) {
+	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
 	}
 }
 
 //挂起主协程，执行当前协程，只能在主协程调用
-void Coroutine::resume() {
-	EnsureMainCoroutine();
-	assert(s_cur_coroutine == s_main_coroutine);
-
+void Coroutine::swapIn() {
 	if (state_ == CoroutineState::TERMINATED) {
 		LOG_DEBUG << "resume a terminated coroutine " << c_id_;
 		return;
 	}
-	Coroutine::Ptr old_coroutine = s_cur_coroutine;
-	s_cur_coroutine = shared_from_this();
+	Coroutine::Ptr old_coroutine = GetMainCoroutine();
+	GetCurrentCoroutine() = shared_from_this();
 
-	LOG_DEBUG << "swap coroutine:" << s_cur_coroutine->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
 
-	if (swapcontext(&(old_coroutine->context_), &(s_cur_coroutine->context_))) {
+	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
 	}
 }
 
 uint64_t Coroutine::GetCid() {
-	assert(s_cur_coroutine != nullptr);
-	return s_cur_coroutine->c_id_;
+	assert(GetCurrentCoroutine() != nullptr);
+	return GetCurrentCoroutine()->c_id_;
 }
 
 void Coroutine::RunInCoroutine() {
 	try {
-		s_cur_coroutine->cb_();
-		s_cur_coroutine->cb_ = nullptr;
-		s_cur_coroutine->state_ = CoroutineState::TERMINATED;
+		GetCurrentCoroutine()->cb_();
+		GetCurrentCoroutine()->cb_ = nullptr;
 	} catch (...) {
 		//todo:
 	}
 
 	//重新返回主协程
-	Coroutine::Yield();
+	GetCurrentCoroutine()->setState(CoroutineState::TERMINATED);
+	Coroutine::SwapOut();
 }
 
-void Coroutine::EnsureMainCoroutine() {
-	if (s_main_coroutine == nullptr) {
-		s_main_coroutine = std::make_shared<Coroutine>();
-		s_cur_coroutine = s_main_coroutine;
-	}
+Coroutine::Ptr& Coroutine::GetCurrentCoroutine() {
+	//第一个协程对象调用swapIn()时初始化
+	static thread_local Coroutine::Ptr t_cur_coroutine;
+	return t_cur_coroutine;
 }
 
-Coroutine::Ptr Coroutine::GetCurrentCoroutine() {
-	assert(s_cur_coroutine != nullptr);
-	return s_cur_coroutine;
+Coroutine::Ptr Coroutine::GetMainCoroutine() {
+	static thread_local Coroutine::Ptr t_main_coroutine = Coroutine::Ptr(new Coroutine());
+	return t_main_coroutine;
 }
 
 std::string Coroutine::name() {

@@ -5,39 +5,40 @@
 #include "Mutex.h"
 #include "Noncopyable.h"
 #include "Poller.h"
-#include "TimerManager.h"
 
 #include <list>
 
 namespace melon {
 
-
-class CoroutineScheduler : public Noncopyable {
+class Scheduler;
+class Processer : public Noncopyable {
 public:
-	typedef std::shared_ptr<CoroutineScheduler> Ptr;
+	typedef std::shared_ptr<Processer> Ptr;
 
-	CoroutineScheduler();
-	virtual ~CoroutineScheduler() {}
+	Processer(Scheduler* scheduler);
+	virtual ~Processer() {}
 
 	virtual void run();
 	void stop();
-	void schedule(Coroutine::Ptr coroutine);
-	void schedule(Coroutine::Func func, std::string name = "");
+	bool stoped() { return stop_; }
+	size_t getLoad() { return load_; }
+	Scheduler* getScheduler() { return scheduler_; }
+	void addTask(Coroutine::Ptr coroutine);
+	void addTask(Coroutine::Func func, std::string name = "");
 	void updateEvent(int fd, int events, Coroutine::Ptr coroutine = nullptr);
 	void removeEvent(int fd);
 
-	void scheduleAt(Timestamp when, Coroutine::Ptr coroutine);
-
-	static CoroutineScheduler* GetSchedulerOfThisThread();
+	static Processer*& GetProcesserOfThisThread();
 
 private:
 	void wakeupPollCoroutine();
 	ssize_t comsumeWakeEvent();
 
-	bool started_;
+	bool stop_ = false;
+	size_t load_ = 0;
 	Mutex mutex_;
+	Scheduler* scheduler_;
 	PollPoller poller_;
-	TimerManager timer_manager_;
 	int event_fd_;
 	std::list<Coroutine::Ptr> coroutines_;
 };

@@ -15,31 +15,33 @@ enum class CoroutineState {
 	RUNNABLE,
 	BLOCKED,
 	TERMINATED,
-	EXCEPTED
 };
 
-const uint32_t kStatckSize = 1024 * 128;
+const uint32_t kStackSize = 1024 * 128;
 
 class Coroutine : public Noncopyable, public std::enable_shared_from_this<Coroutine> {
 public:
 	typedef std::function<void ()> Func;
 	typedef std::shared_ptr<Coroutine> Ptr;
 
-	Coroutine(Func cb, std::string name = "", uint32_t stack_size = 1024 * 128);
-	Coroutine();
+	Coroutine(Func cb, std::string name = "", uint32_t stack_size = kStackSize);
 	~Coroutine();
 
 	//切换到当前线程的主协程
-	static void Yield();
+	static void SwapOut();
 	//执行当前协程
-	void resume();
+	void swapIn();
 	std::string name();
+	void setState(CoroutineState state) { state_ = state; };
+	CoroutineState getState() { return state_; }
+
 	static uint64_t GetCid();
-	static Coroutine::Ptr GetCurrentCoroutine();
+	static Coroutine::Ptr& GetCurrentCoroutine();
+	static Coroutine::Ptr GetMainCoroutine();
 	
 private:
+	Coroutine();
 	static void RunInCoroutine();
-	static void EnsureMainCoroutine();
 
 	uint64_t c_id_;
 	std::string name_;

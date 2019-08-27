@@ -1,4 +1,4 @@
-#include "CoroutineScheduler.h"
+#include "Processer.h"
 #include "Log.h"
 #include "TimerManager.h"
 
@@ -17,8 +17,8 @@ int createTimerFd() {
 	return timerfd;
 }
 
-void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, uint64_t interval) {
-	Timer::Ptr timer = std::make_shared<Timer>(when, coroutine, interval);
+void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval) {
+	Timer::Ptr timer = std::make_shared<Timer>(when, processer, coroutine, interval);
 	bool earliest_timer_changed = false;
 	auto it = timer_map_.begin();
 	if (it == timer_map_.end() || when < it->first) {
@@ -57,13 +57,16 @@ ssize_t TimerManager::readTimerFd() {
 }
 
 void TimerManager::dealWithExpiredTimer() {
+	readTimerFd();
+
 	std::vector<std::pair<Timestamp, Timer::Ptr>> expired;
 	auto it_not_less_now = timer_map_.lower_bound(Timestamp::now());
 	std::copy(timer_map_.begin(), it_not_less_now, back_inserter(expired));
 	timer_map_.erase(timer_map_.begin(), it_not_less_now);
 
 	for (const std::pair<Timestamp, Timer::Ptr>& pair : expired) {
-		scheduler_->schedule(pair.second->getCoroutine());
+		assert(pair.second->getProcesser() != nullptr);
+		pair.second->getProcesser()->addTask(pair.second->getCoroutine());
 	}
 	//todo:周期执行
 	

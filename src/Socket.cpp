@@ -1,8 +1,6 @@
 #include "Address.h"
 #include "Log.h"
-#include "Hook.h"
 #include "Socket.h"
-#include "SchedulerThread.h"
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -16,7 +14,6 @@
 namespace melon {
 	
 Socket::~Socket() {
-	scheduler_->removeEvent(fd_);
 	::close(fd_);
 	LOG_DEBUG << "destroy socket:" << fd_;
 }

@@ -1,5 +1,5 @@
 #include "Poller.h"
-#include "CoroutineScheduler.h"
+#include "Processer.h"
 #include "Log.h"
 
 #include <error.h>
@@ -32,34 +32,33 @@ std::string Poller::eventToString(int event) {
   return oss.str();
 }
 
-PollPoller::PollPoller(CoroutineScheduler* scheduler)
+PollPoller::PollPoller(Processer* processer)
 	:is_polling(false),
-	scheduler_(scheduler) {
+	processer_(processer) {
 }	
 
 void PollPoller::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
+	assert(coroutine != nullptr);
 	auto it = fd_to_index_.find(fd);
 	if (it == fd_to_index_.end()) {
 		struct pollfd pfd;
 		pfd.fd = fd;
 		pfd.events = events;
-		pfd.revents = 0;
+		pfd.revents = kNoneEvent;
 		pollfds_.push_back(pfd);
 		fd_to_index_[fd] = pollfds_.size() - 1;
 		fd_to_coroutine_[fd] = coroutine;
 
-		std::string coroutine_name = coroutine == nullptr ? "null" : coroutine->name();
+		std::string coroutine_name = coroutine->name();
 		LOG_DEBUG << "register:<" << fd << ", " << eventToString(events) << ", " << coroutine_name  << ">";
 	} else {
 		int index = it->second;
 		struct pollfd& pfd = pollfds_[index];
 		
-		std::string old_coroutine_name = fd_to_coroutine_[fd] == nullptr ? "null" : fd_to_coroutine_[fd]->name();
-		std::string coroutine_name = coroutine == nullptr ? "null" : coroutine->name();
-		LOG_DEBUG << "update:<" << fd << ", " << eventToString(pfd.events) << ", " << old_coroutine_name << "> to " << "<" << fd << ", " << eventToString(events) << ", " <<  coroutine_name << ">";
+		LOG_DEBUG << "update:<" << fd << ", " << eventToString(pfd.events) << ", " << fd_to_coroutine_[fd]->name() << "> to " << "<" << fd << ", " << eventToString(events) << ", " <<  coroutine->name() << ">";
 
 		pfd.events = events;
-		pfd.revents = 0;
+		pfd.revents = kNoneEvent;
 		fd_to_coroutine_[fd] = coroutine;
 	}
 }
@@ -86,7 +85,7 @@ void PollPoller::removeEvent(int fd) {
 }
 
 void PollPoller::poll(int timeout) {
-	while (true) {
+	while (!processer_->stoped()) {
 		is_polling = true;
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
 		is_polling = false;
@@ -99,11 +98,15 @@ void PollPoller::poll(int timeout) {
 		} else {
 			for (auto& pollfd : pollfds_) {
 				if (pollfd.revents > 0) {
-					assert(fd_to_coroutine_[pollfd.fd] != nullptr);
 					--num;
-					LOG_DEBUG << "new event arrive:<" << pollfd.fd << ", " << eventToString(pollfd.revents) << ", " << fd_to_coroutine_[pollfd.fd]->name() << ">";
+					auto coroutine = fd_to_coroutine_[pollfd.fd];
+					assert(coroutine != nullptr);
+					LOG_DEBUG << "new event arrive:<" << pollfd.fd << ", " << eventToString(pollfd.revents) << ", " << coroutine->name() << ">";
 
-					scheduler_->schedule(fd_to_coroutine_[pollfd.fd]);
+					removeEvent(pollfd.fd);
+
+					coroutine->setState(CoroutineState::RUNNABLE);
+					processer_->addTask(coroutine);
 				}	
 
 				if (num == 0) {
@@ -111,7 +114,7 @@ void PollPoller::poll(int timeout) {
 				}
 			}
 		}
-		Coroutine::Yield();
+		Coroutine::SwapOut();
 	}
 }
 

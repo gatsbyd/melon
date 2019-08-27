@@ -37,8 +37,6 @@ LogWrapper::LogWrapper(LogEvent::ptr event)
 LogWrapper::~LogWrapper() {
 	Singleton<Logger>::getInstance()->log(event_);
 	if (event_->logLevel_ == LogLevel::FATAL) {
-		//todo: flush asyncloging
-		sleep(3);
 		abort();
 	}
 }
@@ -107,10 +105,6 @@ void ConsoleAppender::append(const std::string& log) {
 Buffer::Buffer(size_t total) 
 	:total_(total), available_(total), cur_(0) {
 	data_ = new char[total];
-	if (!data_) {
-		//todo: retry
-		//LOG_FATAL << "no space to allocate";
-	}
 }
 
 Buffer::~Buffer() {
