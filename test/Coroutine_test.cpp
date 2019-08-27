@@ -9,10 +9,10 @@ static int sum = 0;
 
 void test() {
 	LOG_DEBUG << "in Coroutine(" << Coroutine::GetCid() << ")";
-	Coroutine::Yield();
+	Coroutine::SwapOut();
 	sum++;
 	LOG_DEBUG << "in Coroutine(" << Coroutine::GetCid() << ")";
-	Coroutine::Yield();
+	Coroutine::SwapOut();
 }
 
 int main() {
@@ -25,11 +25,11 @@ int main() {
 	}
 
 	for (int i = 0; i < sz; ++i) {
-		coroutines[i]->resume();
+		coroutines[i]->swapIn();
 		LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
 	}
 	for (int i = 0; i < sz; ++i) {
-		coroutines[i]->resume();
+		coroutines[i]->swapIn();
 		LOG_DEBUG << "back to main Coroutine(" << Coroutine::GetCid() << ")";
 	}
 

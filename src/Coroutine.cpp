@@ -38,7 +38,7 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 
 Coroutine::Coroutine()
 	:c_id_(++t_coroutine_id),
-	name_("Main_" + std::to_string(c_id_)),
+	name_("Main-" + std::to_string(c_id_)),
 	state_(CoroutineState::INIT) {
 	LOG_DEBUG << "create coroutine:" << name_;
 	
@@ -53,7 +53,6 @@ Coroutine::~Coroutine() {
 	if (stack_) {
 		free(stack_);
 	}
-	//todo:设置当前协程
 }
 
 //挂起当前正在执行的协程，切换到主协程执行，必须在非主协程调用

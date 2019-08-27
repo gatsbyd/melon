@@ -15,7 +15,6 @@ int createTimerFd() {
 		LOG_FATAL << "timerfd_create:" << strerror(errno);
 	}
 
-	LOG_DEBUG << "create tiemrfd " << timerfd;
 	return timerfd;
 }
 

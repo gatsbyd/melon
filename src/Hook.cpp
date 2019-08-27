@@ -108,7 +108,6 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-	LOG_DEBUG << "read fd:" << fd;
 	return ioHook(fd, read_f, melon::Poller::kReadEvent, buf, count);
 }
 

@@ -47,6 +47,7 @@ void Processer::run() {
 	}
 	Coroutine::Ptr cur;
 
+	//没有可以执行协程时调用poll协程
 	Coroutine::Ptr poll_coroutine = std::make_shared<Coroutine>(std::bind(&Poller::poll, &poller_, kPollTimeMs), "Poll");
 
 	while (!stop_) {
