@@ -2,6 +2,7 @@
 #define _MELON_TIMER_MANAGER_H_
 
 #include "Coroutine.h"
+#include "Mutex.h"
 #include "Timestamp.h"
 
 #include <map>
@@ -55,6 +56,7 @@ private:
 
 	int timer_fd_;
 	std::multimap<Timestamp, Timer::Ptr> timer_map_;
+	Mutex mutex_;
 };
 
 }

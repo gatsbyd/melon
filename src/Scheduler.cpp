@@ -10,7 +10,7 @@ namespace melon {
 Scheduler::Scheduler()
 	:main_processer_(this),
 	 timer_manager_(new TimerManager()){
-	//todo:线程安全
+
 	processers_.push_back(&main_processer_);
 }
 
@@ -21,7 +21,6 @@ Scheduler::~Scheduler() {
 void Scheduler::start(size_t thread_number) {
 	assert(thread_number > 0);
 
-
 	for (size_t i = 0; i < thread_number - 1; ++i) {
 		threads_.push_back(std::make_shared<SchedulerThread>(this));
 		processers_.push_back(threads_.back()->startSchedule());
@@ -31,7 +30,6 @@ void Scheduler::start(size_t thread_number) {
 	timer_processer_ = timer_thread_->startSchedule();
 
 	timer_processer_->addTask([&]() {
-						//todo:1.无限循环 2.线程安全
 						while (true) {
 							timer_manager_->dealWithExpiredTimer();
 						}
@@ -55,13 +53,14 @@ void Scheduler::stop() {
 }
 
 void Scheduler::addTask(Coroutine::Func task, std::string name) {
-	Processer* picked = pickOneProcesser();
+	Processer* picked = pickOneProcesser();	//thread-save
 
 	assert(picked != nullptr);
-	picked->addTask(task, name);
+	picked->addTask(task, name);	//thread-save
 }
 
 Processer* Scheduler::pickOneProcesser() {
+	MutexGuard lock(mutex_);
 	static size_t index = 0;
 	assert(index < processers_.size());
 	Processer* picked = processers_[index];
@@ -75,7 +74,7 @@ void Scheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
 	if (processer == nullptr) {
 		processer = pickOneProcesser();
 	}
-	timer_manager_->addTimer(when, coroutine, processer);
+	timer_manager_->addTimer(when, coroutine, processer); //threa-save
 }
 
 }

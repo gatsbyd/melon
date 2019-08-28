@@ -1,8 +1,9 @@
 #ifndef _MELON_SCHEDULER_H_
 #define _MELON_SCHEDULER_H_
 
-#include "Noncopyable.h"
 #include "Coroutine.h"
+#include "Mutex.h"
+#include "Noncopyable.h"
 #include "ProcesserThread.h"
 #include "Processer.h"
 #include "Timestamp.h"
@@ -32,11 +33,12 @@ private:
 	std::vector<Processer*> processers_;
 	std::vector<SchedulerThread::Ptr> threads_;
 
-
 	//单独一个线程处理任务
 	Processer* timer_processer_;
 	SchedulerThread::Ptr timer_thread_;
 	std::unique_ptr<TimerManager> timer_manager_;
+
+	Mutex mutex_;
 };
 
 }

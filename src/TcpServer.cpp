@@ -23,7 +23,6 @@ void TcpServer::start(size_t thread_num) {
 }
 
 void TcpServer::onAccept() {
-	//todo
 	while (true) {
 		IpAddress peer_addr;
 		int connfd = listen_socket_.accept(peer_addr);

@@ -21,14 +21,17 @@ int createTimerFd() {
 void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval) {
 	Timer::Ptr timer = std::make_shared<Timer>(when, processer, coroutine, interval);
 	bool earliest_timer_changed = false;
-	auto it = timer_map_.begin();
-	if (it == timer_map_.end() || when < it->first) {
-		earliest_timer_changed = true;
-	}
-	timer_map_.insert({when, timer});
+	{
+		MutexGuard lock(mutex_);
+		auto it = timer_map_.begin();
+		if (it == timer_map_.end() || when < it->first) {
+			earliest_timer_changed = true;
+		}
+		timer_map_.insert({when, timer});
 
-	if (earliest_timer_changed) {
-		resetTimerFd(when);	
+		if (earliest_timer_changed) {
+			resetTimerFd(when);	
+		}
 	}
 }
 
