@@ -13,6 +13,7 @@ public:
 
 protected:
 	void handleClient(TcpConnection::Ptr conn) override {
+		LOG_INFO << "new connection, peer addr:" << conn->peerAddr().toString();
 		char buffer[500];
 		int n;
 		while ((n = conn->read(buffer, sizeof buffer)) > 0) {

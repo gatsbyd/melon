@@ -5,6 +5,7 @@ using namespace melon;
 
 void bar() {
 	LOG_INFO << "start bar";
+	LOG_INFO << "leave bar";
 }
 
 void foo(melon::Scheduler* scheduler) {
@@ -13,7 +14,9 @@ void foo(melon::Scheduler* scheduler) {
 }
 
 int main() {
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+
 	melon::Scheduler scheduler;
 	scheduler.addTask(std::bind(foo, &scheduler), "foo");
 	scheduler.start();
