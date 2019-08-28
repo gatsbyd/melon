@@ -4,10 +4,10 @@
 #include "Scheduler.h"
 #include "Processer.h"
 
-#define go ::melon::_go-
+#define go ::melon::_go()-
 
 namespace melon {
-	
+
 struct _go {
     void operator-(std::function<void()> task)
     {

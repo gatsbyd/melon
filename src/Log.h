@@ -118,7 +118,6 @@ enum class LogLevel {
 class Logger {
 friend class Singleton<Logger>;
 public:
-	typedef Singleton<Logger> LoggerSingletion;
 
 	void log(LogEvent::ptr event);
 	void addAppender(const std::string name, LogAppender::ptr appender);
@@ -144,6 +143,7 @@ inline LogLevel Logger::getLogLevel() {
 }
 
 template class Singleton<Logger>;
+typedef Singleton<Logger> LoggerSingletion;
 
 }
 

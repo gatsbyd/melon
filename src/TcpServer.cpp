@@ -1,6 +1,7 @@
 #include "Log.h"
 #include "Scheduler.h"
 #include "TcpServer.h"
+#include "GoStyleSyntax.h"
 
 #include <assert.h>
 
@@ -16,6 +17,7 @@ TcpServer::TcpServer(const IpAddress& listen_addr)
 
 void TcpServer::start(size_t thread_num) {
 	listen_socket_.listen();
+
 
 	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::onAccept, this), "Accept");
 	SchedulerSingleton::getInstance()->start(thread_num);
