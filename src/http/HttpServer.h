@@ -9,7 +9,7 @@ namespace http {
 	
 class HttpServer : public TcpServer {
 public:
-	HttpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> scheduler);
+	HttpServer(const IpAddress& listen_addr);
 	~HttpServer() {}
 	
 protected:

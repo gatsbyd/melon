@@ -11,15 +11,12 @@
 namespace melon {
 	
 class IpAddress;
-class Scheduler;
 
 class TcpServer : public Noncopyable {
 public:
-	//todo:
-	TcpServer(const IpAddress& listen_addr, std::shared_ptr<Scheduler> scheduler);
+	TcpServer(const IpAddress& listen_addr);
 	~TcpServer() {}
 	
-	//todo:
 	void start(size_t thread_num = 1);
 
 protected:
@@ -28,8 +25,6 @@ protected:
 
 	IpAddress listen_addr_;
 	Socket listen_socket_;
-
-	std::shared_ptr<Scheduler> scheduler_;
 };
 
 }

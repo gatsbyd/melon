@@ -116,9 +116,9 @@ enum class LogLevel {
 };
 
 class Logger {
+friend class Singleton<Logger>;
 public:
-	Logger();
-	virtual ~Logger() {};
+	typedef Singleton<Logger> LoggerSingletion;
 
 	void log(LogEvent::ptr event);
 	void addAppender(const std::string name, LogAppender::ptr appender);
@@ -132,6 +132,8 @@ protected:
 	virtual std::string format(LogEvent::ptr event);
 
 private:
+	Logger();
+	virtual ~Logger() {};
 	Mutex mutex_;
 	std::map<std::string, LogAppender::ptr> appenders_;
 };

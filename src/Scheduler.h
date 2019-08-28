@@ -6,6 +6,7 @@
 #include "Noncopyable.h"
 #include "ProcesserThread.h"
 #include "Processer.h"
+#include "Singleton.h"
 #include "Timestamp.h"
 
 #include <vector>
@@ -14,11 +15,12 @@ namespace melon {
 	
 class TimerManager;
 
+typedef Singleton<Scheduler> SchedulerSingleton;
+
 class Scheduler : public Noncopyable {
+friend class Singleton<Scheduler>;
 public:
 	typedef std::shared_ptr<Scheduler> Ptr;
-	Scheduler();
-	~Scheduler();
 
 	void start(size_t thread_number = 1);
 	void stop();
@@ -26,8 +28,11 @@ public:
 	void runAt(Timestamp when, Coroutine::Ptr coroutine);
 
 protected:
-	virtual Processer* pickOneProcesser();
+	Processer* pickOneProcesser();
 private:
+	Scheduler();
+	~Scheduler();
+
 	bool stop_ = false;
 	Processer main_processer_;
 	std::vector<Processer*> processers_;
