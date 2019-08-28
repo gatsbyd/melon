@@ -3,6 +3,7 @@
 
 #include <arpa/inet.h>
 #include <string.h>
+#include <sstream>
 
 namespace melon {
 
@@ -37,8 +38,16 @@ IpAddress::IpAddress(const struct sockaddr_in& addr)
 
 	
 std::string IpAddress::toString() const {
-	//todo
-	return "todo";
+	std::stringstream ss;
+	char buf[20];
+	const char* ip = ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
+	if (ip) {
+		ss << ip;
+	} else {
+		ss << "invalid ip";
+	}
+	ss << ":" << ::ntohs(addr_.sin_port);
+	return ss.str();
 }
 
 const struct sockaddr* IpAddress::getSockAddr() const {

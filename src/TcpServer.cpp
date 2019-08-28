@@ -27,7 +27,6 @@ void TcpServer::onAccept() {
 	while (true) {
 		IpAddress peer_addr;
 		int connfd = listen_socket_.accept(peer_addr);
-		LOG_INFO << "new connection fd:" << connfd;
 
 		Socket::Ptr socket = std::make_shared<Socket>(connfd);
 		scheduler_->addTask(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
@@ -35,8 +34,7 @@ void TcpServer::onAccept() {
 }
 
 void TcpServer::handleClient(TcpConnection::Ptr connection) {
-	//todo:打印对端地址
-	connection->shutdown();
+	LOG_INFO << "new connection, peer addr:" << connection->peerAddr().toString();
 }
 
 }

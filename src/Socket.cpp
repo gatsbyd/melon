@@ -15,7 +15,7 @@ namespace melon {
 	
 Socket::~Socket() {
 	::close(fd_);
-	LOG_DEBUG << "destroy socket:" << fd_;
+	LOG_DEBUG << "close socket:" << fd_;
 }
 
 void Socket::bind(const IpAddress& local) {
@@ -31,18 +31,13 @@ void Socket::listen() {
 }
 
 int Socket::accept(IpAddress& peer) {
-	//todo:accept4
 	socklen_t addrlen = static_cast<socklen_t>(sizeof (struct sockaddr));
 	int connfd = ::accept(fd_, peer.getSockAddr(), &addrlen);
 	if (connfd < 0) {
-		LOG_FATAL << "accept: " << strerror(errno);
+		LOG_ERROR << "accept: " << strerror(errno);
 	}
 	SetNonBlockAndCloseOnExec(connfd);
 
-	if (connfd < 0) {
-		//todo: handle error
-		LOG_FATAL << "accept:" << strerror(errno);
-	}
 	return connfd;
 }
 
@@ -55,7 +50,7 @@ void Socket::setTcpNoDelay(bool on) {
 	int ret = ::setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
-		LOG_FATAL << "setsockopt: " << strerror(errno);
+		LOG_ERROR << "setsockopt: " << strerror(errno);
 	}
 }
 
@@ -64,7 +59,7 @@ void Socket::setReuseAddr(bool on) {
 	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_REUSEADDR, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
-		LOG_FATAL << "setsockopt: " << strerror(errno);
+		LOG_ERROR << "setsockopt: " << strerror(errno);
 	}
 }
 
@@ -73,7 +68,7 @@ void Socket::setReusePort(bool on) {
 	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_REUSEPORT, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
-		LOG_FATAL << "setsockopt: " << strerror(errno);
+		LOG_ERROR << "setsockopt: " << strerror(errno);
 	}
 }
 
@@ -82,7 +77,7 @@ void Socket::setKeepAlive(bool on) {
 	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_KEEPALIVE, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
-		LOG_FATAL << "setsockopt: " << strerror(errno);
+		LOG_ERROR << "setsockopt: " << strerror(errno);
 	}
 }
 
@@ -96,7 +91,7 @@ ssize_t Socket::write(const void *buf, size_t count) {
 
 void Socket::shutdownWrite() {
 	if (::shutdown(fd_, SHUT_WR) < 0) {
-		LOG_ERROR << "socket:shutdownWrite:" << strerror(errno);
+		LOG_ERROR << "shutdownWrite:" << strerror(errno);
 	}
 }
 

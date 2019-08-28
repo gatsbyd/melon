@@ -17,6 +17,7 @@ public:
 	ssize_t writen(const void* buf, size_t count);
 	void shutdown();
 
+	const IpAddress& peerAddr() const { return peer_addr_; }
 private:
 	Socket::Ptr conn_socket_;
 	IpAddress peer_addr_;

@@ -98,12 +98,8 @@ uint64_t Coroutine::GetCid() {
 }
 
 void Coroutine::RunInCoroutine() {
-	try {
-		GetCurrentCoroutine()->cb_();
-		GetCurrentCoroutine()->cb_ = nullptr;
-	} catch (...) {
-		//todo:
-	}
+	GetCurrentCoroutine()->cb_();
+	GetCurrentCoroutine()->cb_ = nullptr;
 
 	//重新返回主协程
 	GetCurrentCoroutine()->setState(CoroutineState::TERMINATED);
