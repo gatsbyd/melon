@@ -1,4 +1,5 @@
 #include "Scheduler.h"
+#include "GoStyleSyntax.h"
 #include "Log.h"
 
 using namespace melon;
@@ -8,19 +9,17 @@ void bar() {
 	LOG_INFO << "leave bar";
 }
 
-void foo(melon::Scheduler* scheduler) {
+void foo() {
 	LOG_INFO << "start foo";
-	scheduler->addTask(bar, "bar");
+	go bar;
 }
 
 int main() {
 	Logger::setLogLevel(LogLevel::INFO);
-	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	LoggerSingletion::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
-	melon::Scheduler scheduler;
-	scheduler.addTask(std::bind(foo, &scheduler), "foo");
-	scheduler.start();
-
+	go foo;
+	SchedulerSingleton::getInstance()->start();
 	return 0;
 }
 
