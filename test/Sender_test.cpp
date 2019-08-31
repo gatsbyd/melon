@@ -1,4 +1,5 @@
 #include "TcpServer.h"
+#include "Log.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -27,6 +28,11 @@ public:
 		while ((nread = fread(buf, 1, sizeof buf, fp.get())) > 0) {
 			conn->writen(buf, nread);
 		}
+		
+		conn->shutdown();
+		while ((nread = conn->read(buf, sizeof buf) > 0)) {
+
+		}
 	}
 
 private:
@@ -37,6 +43,8 @@ int main(int argc, char* argv[]) {
 	if (argc < 3) {
 		printf("Usage: %s filename port\n", argv[0]);
 	}
+
+	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	IpAddress listen_addr(atoi(argv[2]));
 	Sender sender(listen_addr, argv[1]);
