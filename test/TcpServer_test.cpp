@@ -31,5 +31,6 @@ int main() {
 
 	EchoServer server(listen_addr);
 	server.start();
+	SchedulerSingleton::getInstance()->start();
 	return 0;
 }

@@ -15,7 +15,7 @@ public:
 	TcpServer(const IpAddress& listen_addr);
 	~TcpServer() {}
 	
-	void start(size_t thread_num = 1);
+	void start();
 
 protected:
 	virtual void handleClient(TcpConnection::Ptr connection);

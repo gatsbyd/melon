@@ -15,11 +15,10 @@ TcpServer::TcpServer(const IpAddress& listen_addr)
 	listen_socket_.bind(listen_addr_);
 }
 
-void TcpServer::start(size_t thread_num) {
+void TcpServer::start() {
 	listen_socket_.listen();
 
 	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::startAccept, this), "Accept");
-	SchedulerSingleton::getInstance()->start(thread_num);
 }
 
 void TcpServer::startAccept() {
