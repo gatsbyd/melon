@@ -10,7 +10,7 @@ namespace melon {
 
 TcpServer::TcpServer(const IpAddress& listen_addr)
 	:listen_addr_(listen_addr),
-	listen_socket_(Socket::CreateSocket()) {
+	listen_socket_(Socket::CreateNonBlockSocket()) {
 
 	listen_socket_.bind(listen_addr_);
 }
@@ -18,12 +18,11 @@ TcpServer::TcpServer(const IpAddress& listen_addr)
 void TcpServer::start(size_t thread_num) {
 	listen_socket_.listen();
 
-
-	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::onAccept, this), "Accept");
+	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::startAccept, this), "Accept");
 	SchedulerSingleton::getInstance()->start(thread_num);
 }
 
-void TcpServer::onAccept() {
+void TcpServer::startAccept() {
 	while (true) {
 		IpAddress peer_addr;
 		int connfd = listen_socket_.accept(peer_addr);

@@ -9,8 +9,6 @@
 #include <vector>
 
 namespace melon {
-	
-class IpAddress;
 
 class TcpServer : public Noncopyable {
 public:
@@ -20,8 +18,10 @@ public:
 	void start(size_t thread_num = 1);
 
 protected:
-	void onAccept();
 	virtual void handleClient(TcpConnection::Ptr connection);
+
+private:
+	void startAccept();
 
 	IpAddress listen_addr_;
 	Socket listen_socket_;

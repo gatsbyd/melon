@@ -1,6 +1,8 @@
 #ifndef _MELON_SOCKET_H_
 #define _MELON_SOCKET_H_
 
+#include "Noncopyable.h"
+
 #include <memory>
 
 namespace melon {
@@ -8,7 +10,7 @@ namespace melon {
 class IpAddress;
 class Processer;
 
-class Socket {
+class Socket : public Noncopyable {
 public:
 	typedef std::shared_ptr<Socket> Ptr;
 
@@ -19,6 +21,7 @@ public:
 	void bind(const IpAddress& local);
 	void listen();
 	int accept(IpAddress& peer);
+	int connect(IpAddress& server_addr);
 
 	int fd() const;
 
@@ -32,7 +35,9 @@ public:
 	void shutdownWrite();
 
 	static void SetNonBlockAndCloseOnExec(int fd);
-	static int CreateSocket();
+	static int CreateNonBlockSocket();
+	static int GetSocketError(int sockfd);
+
 private:
 	int fd_;
 };

@@ -4,6 +4,7 @@
 #include "Log.h"
 #include "Timestamp.h"
 #include "Scheduler.h"
+#include "Socket.h"
 
 #include "assert.h"
 #include <dlfcn.h>
@@ -21,6 +22,7 @@ struct HookIniter {
 		DLSYM(sleep);
 		DLSYM(accept);
 		DLSYM(accept4);
+		DLSYM(connect);
 		DLSYM(read);
 		DLSYM(readv);
 		DLSYM(recv);
@@ -44,7 +46,7 @@ static ssize_t ioHook(int fd, OriginFun origin_func, int event, Args&&... args) 
 
 	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
 	if (!processer) {
-		origin_func(fd, std::forward<Args>(args)...);
+		return origin_func(fd, std::forward<Args>(args)...);
 	}
 
 retry:
@@ -73,6 +75,7 @@ extern "C" {
 HOOK_INIT(sleep)
 HOOK_INIT(accept)
 HOOK_INIT(accept4)
+HOOK_INIT(connect)
 HOOK_INIT(read)
 HOOK_INIT(readv)
 HOOK_INIT(recv)
@@ -106,6 +109,32 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
 	return ioHook(sockfd, accept4_f, melon::Poller::kReadEvent, addr, addrlen, flags);
 }
+
+int connect(int sockfd, const struct sockaddr *addr,
+				                   socklen_t addrlen) {
+	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
+	if (!processer) {
+		return connect_f(sockfd, addr, addrlen);
+	}
+
+	int ret = ::connect_f(sockfd, addr, addrlen);
+
+	if (ret == -1 && errno == EINPROGRESS) {
+		processer->updateEvent(sockfd, melon::Poller::kWriteEvent, melon::Coroutine::GetCurrentCoroutine());
+		melon::Coroutine::GetCurrentCoroutine()->setState(melon::CoroutineState::BLOCKED);
+		melon::Coroutine::SwapOut();
+
+		int err = melon::Socket::GetSocketError(sockfd);
+		if (err == 0) {
+			return 0;
+		} else {
+			return -1;
+		}
+	}
+	
+	return ret;
+}
+
 
 ssize_t read(int fd, void *buf, size_t count) {
 	return ioHook(fd, read_f, melon::Poller::kReadEvent, buf, count);

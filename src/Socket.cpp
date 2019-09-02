@@ -41,6 +41,11 @@ int Socket::accept(IpAddress& peer) {
 	return connfd;
 }
 
+int Socket::connect(IpAddress& server_addr) {
+	socklen_t addrlen = static_cast<socklen_t>(sizeof (struct sockaddr));
+	return ::connect(fd_, server_addr.getSockAddr(), addrlen);
+}
+
 int Socket::fd() const {
 	return fd_;
 }
@@ -111,7 +116,7 @@ void Socket::SetNonBlockAndCloseOnExec(int fd) {
 	}
 }
 
-int Socket::CreateSocket() {
+int Socket::CreateNonBlockSocket() {
 	int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		LOG_FATAL << "socket: " << strerror(errno);
@@ -121,4 +126,18 @@ int Socket::CreateSocket() {
 	return fd;
 }
 
+int Socket::GetSocketError(int sockfd)
+{
+  int optval;
+  socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+
+  if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+  {
+    return errno;
+  }
+  else
+  {
+    return optval;
+  }
+}
 }

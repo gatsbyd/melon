@@ -17,6 +17,11 @@ extern accept_t accept_f;
 typedef int (*accept4_t)(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
 extern accept4_t accept4_f;
 
+//connect
+typedef int (*connect_t)(int sockfd, const struct sockaddr *addr,
+				                   socklen_t addrlen);
+extern connect_t connect_f;
+
 //read
 typedef ssize_t (*read_t)(int fd, void *buf, size_t count);
 extern read_t read_f;

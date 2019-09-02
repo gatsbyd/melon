@@ -105,6 +105,7 @@ void PollPoller::poll(int timeout) {
 
 					removeEvent(pollfd.fd);
 
+					//todo:有四类事件：1.可读，2.可写，3.关闭，4.错误 需要处理
 					coroutine->setState(CoroutineState::RUNNABLE);
 					processer_->addTask(coroutine);
 				}	
