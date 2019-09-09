@@ -14,17 +14,13 @@ TcpClient::TcpClient(IpAddress server_addr)
 	:server_addr_(server_addr) {
 }
 
-void TcpClient::start() {
-	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpClient::startConnect, this), "Start Connect");
-}
-
-void TcpClient::startConnect() {
+TcpConnection::Ptr TcpClient::connect() {
 retry:
 	{
 		Socket::Ptr sock = std::make_shared<Socket>(Socket::CreateNonBlockSocket());
 		int ret = sock->connect(server_addr_);
 		if (ret == 0) {
-			SchedulerSingleton::getInstance()->addTask(std::bind(&TcpClient::onConnected, this, std::make_shared<TcpConnection>(sock, server_addr_)), "Connect");
+			return std::make_shared<TcpConnection>(sock, server_addr_);
 		} else if (errno == EAGAIN 
 					|| errno == EADDRINUSE 
 					|| errno == EADDRNOTAVAIL 
@@ -35,13 +31,10 @@ retry:
 			goto retry;
 		} else {
 			LOG_ERROR << "connect error in TcpClinet::startConnect " << strerror(errno);
+			return nullptr;
 		}
 		
 	}
-}
-
-void TcpClient::onConnected(TcpConnection::Ptr conn) {
-	LOG_DEBUG << "TcpClient: new Tcp Connection created, server address is " << conn->peerAddr().toString();
 }
 
 }

@@ -10,14 +10,9 @@ public:
 	TcpClient(IpAddress server_addr);
 	virtual ~TcpClient() {}
 
-	void start();
-
-protected:
-	virtual void onConnected(TcpConnection::Ptr conn);
+	TcpConnection::Ptr connect();
 
 private:
-	void startConnect();
-
 	static const int kMaxRetryDelayMs = 15 * 1000;
 	static const int kInitRetryDelayMs = 500;
 
