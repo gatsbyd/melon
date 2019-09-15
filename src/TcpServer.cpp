@@ -1,16 +1,16 @@
 #include "Log.h"
 #include "Scheduler.h"
 #include "TcpServer.h"
-#include "GoStyleSyntax.h"
 
 #include <assert.h>
 
 
 namespace melon {
 
-TcpServer::TcpServer(const IpAddress& listen_addr)
+TcpServer::TcpServer(const IpAddress& listen_addr, Scheduler* scheduler)
 	:listen_addr_(listen_addr),
-	listen_socket_(Socket::CreateNonBlockSocket()) {
+	listen_socket_(Socket::CreateNonBlockSocket()),
+	scheduler_(scheduler) {
 
 	listen_socket_.bind(listen_addr_);
 }
@@ -18,7 +18,7 @@ TcpServer::TcpServer(const IpAddress& listen_addr)
 void TcpServer::start() {
 	listen_socket_.listen();
 
-	SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::startAccept, this), "Accept");
+	scheduler_->addTask(std::bind(&TcpServer::startAccept, this), "Accept");
 }
 
 void TcpServer::startAccept() {
@@ -27,7 +27,7 @@ void TcpServer::startAccept() {
 		int connfd = listen_socket_.accept(peer_addr);
 
 		Socket::Ptr socket = std::make_shared<Socket>(connfd);
-		SchedulerSingleton::getInstance()->addTask(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
+		scheduler_->addTask(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
 	}
 }
 

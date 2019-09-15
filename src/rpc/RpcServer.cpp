@@ -6,8 +6,8 @@ namespace melon {
 namespace rpc {
 
 void RpcServer::handleClient(TcpConnection::Ptr conn) {
-	//read len
-	
+	//todo:read len
+	(void) conn;
 
 }
 

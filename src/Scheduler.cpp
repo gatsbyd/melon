@@ -7,34 +7,35 @@
 
 namespace melon {
 
-Scheduler::Scheduler()
+Scheduler::Scheduler(size_t thread_number)
 	:main_processer_(this),
-	 timer_manager_(new TimerManager()){
+	timer_manager_(new TimerManager()) {
+	assert(thread_number > 0);
+	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
-	processers_.push_back(&main_processer_);
+	for (size_t i = 0; i < thread_number - 1; ++i) {
+		threads_.push_back(std::make_shared<SchedulerThread>(this));
+	}
+
+	work_processers_.push_back(&main_processer_);
+	for (const SchedulerThread::Ptr& thread : threads_) {
+		work_processers_.push_back(thread->startSchedule());
+	}
+
+	timer_thread_ = std::make_shared<SchedulerThread>(this);
 }
 
 Scheduler::~Scheduler() {
 	stop();
 }
 
-void Scheduler::start(size_t thread_number) {
-	assert(thread_number > 0);
-
-	for (size_t i = 0; i < thread_number - 1; ++i) {
-		threads_.push_back(std::make_shared<SchedulerThread>(this));
-		processers_.push_back(threads_.back()->startSchedule());
-	}
-
-	timer_thread_ = std::make_shared<SchedulerThread>(this);
+void Scheduler::start() {
 	timer_processer_ = timer_thread_->startSchedule();
-
 	timer_processer_->addTask([&]() {
 						while (true) {
 							timer_manager_->dealWithExpiredTimer();
 						}
 					}, "timer");
-	assert(thread_number == processers_.size());
 	main_processer_.run();
 }
 
@@ -42,7 +43,7 @@ void Scheduler::stop() {
 	if (stop_) return;
 	stop_ = true;
 
-	for (auto processer : processers_) {
+	for (auto processer : work_processers_) {
 		processer->stop();
 	}
 	for (auto thread : threads_) {
@@ -62,9 +63,10 @@ void Scheduler::addTask(Coroutine::Func task, std::string name) {
 Processer* Scheduler::pickOneProcesser() {
 	MutexGuard lock(mutex_);
 	static size_t index = 0;
-	assert(index < processers_.size());
-	Processer* picked = processers_[index];
-	index = index % processers_.size();
+	LOG_DEBUG << index << "," << work_processers_.size();
+	assert(index < work_processers_.size());
+	Processer* picked = work_processers_[index++];
+	index = index % work_processers_.size();
 
 	return picked;
 }

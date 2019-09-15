@@ -10,17 +10,17 @@
 
 namespace melon {
 namespace rpc {
-	
+
 class RpcServer : public TcpServer {
 public:
-	RpcServer(const IpAddress& listen_addr)
-		:TcpServer(listen_addr) {}
+	RpcServer(const IpAddress& listen_addr, Scheduler* scheduler)
+		:TcpServer(listen_addr, scheduler) {}
 
 	void handleClient(TcpConnection::Ptr conn) override;
 	void registerService(::google::protobuf::Service* service);
 
 private:
-	std::map<std::string, Service*> services_;
+	std::map<std::string, ::google::protobuf::Service*> services_;
 };
 
 }

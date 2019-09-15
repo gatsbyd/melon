@@ -10,9 +10,11 @@
 
 namespace melon {
 
+class Scheduler;
+
 class TcpServer : public Noncopyable {
 public:
-	TcpServer(const IpAddress& listen_addr);
+	TcpServer(const IpAddress& listen_addr, Scheduler* scheduler);
 	~TcpServer() {}
 	
 	void start();
@@ -25,6 +27,7 @@ private:
 
 	IpAddress listen_addr_;
 	Socket listen_socket_;
+	Scheduler* scheduler_;
 };
 
 }

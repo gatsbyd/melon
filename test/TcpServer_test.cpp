@@ -8,8 +8,8 @@ using namespace melon;
 
 class EchoServer : public TcpServer {
 public:
-	EchoServer(const IpAddress& addr) 
-			:TcpServer(addr) {}
+	EchoServer(const IpAddress& addr, Scheduler* scheduler) 
+			:TcpServer(addr, scheduler) {}
 
 protected:
 	void handleClient(TcpConnection::Ptr conn) override {
@@ -29,8 +29,11 @@ int main() {
 
 	IpAddress listen_addr(1234);
 
-	EchoServer server(listen_addr);
+	Scheduler scheduler(2);
+	EchoServer server(listen_addr, &scheduler);
 	server.start();
-	SchedulerSingleton::getInstance()->start();
+
+	scheduler.start();
+
 	return 0;
 }
