@@ -45,6 +45,7 @@ void Processer::run() {
 	} else {
 		GetProcesserOfThisThread() = this;
 	}
+	melon::setHookEnabled(true);
 	Coroutine::Ptr cur;
 
 	//没有可以执行协程时调用poll协程

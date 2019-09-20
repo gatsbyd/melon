@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "Coroutine.h"
 #include "Processer.h"
 #include "Hook.h"
@@ -6,7 +7,6 @@
 #include "Scheduler.h"
 #include "Socket.h"
 
-#include "assert.h"
 #include <dlfcn.h>
 #include <errno.h>
 #include <memory>
@@ -38,6 +38,16 @@ struct HookIniter {
 
 static HookIniter hook_initer;
 
+static __thread bool t_hook_enabled = false;
+
+bool isHookEnabled() {
+	return t_hook_enabled;
+}
+
+void setHookEnabled(bool flag) {
+	t_hook_enabled = flag;
+}
+
 }
 
 template<typename OriginFun, typename... Args>
@@ -45,7 +55,7 @@ static ssize_t ioHook(int fd, OriginFun origin_func, int event, Args&&... args) 
 	ssize_t n;
 
 	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
-	if (!processer) {
+	if (!melon::isHookEnabled()) {
 		return origin_func(fd, std::forward<Args>(args)...);
 	}
 
@@ -91,8 +101,8 @@ HOOK_INIT(sendmsg)
 
 unsigned int sleep(unsigned int seconds) {
 	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
-	if (!processer) {
-		sleep_f(seconds);
+	if (!melon::isHookEnabled()) {
+		return sleep_f(seconds);
 	}
 
 	melon::Scheduler* scheduler = processer->getScheduler();
@@ -113,7 +123,7 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
 int connect(int sockfd, const struct sockaddr *addr,
 				                   socklen_t addrlen) {
 	melon::Processer* processer = melon::Processer::GetProcesserOfThisThread();
-	if (!processer) {
+	if (!melon::isHookEnabled()) {
 		return connect_f(sockfd, addr, addrlen);
 	}
 

@@ -3,6 +3,11 @@
 
 #include <sys/socket.h>
 
+namespace melon {
+	bool isHookEnabled();
+	void setHookEnabled(bool flag);
+}
+
 extern "C" {
 
 //sleep
