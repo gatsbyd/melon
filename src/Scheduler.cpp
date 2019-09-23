@@ -17,6 +17,7 @@ Scheduler::Scheduler(size_t thread_number)
 		threads_.push_back(std::make_shared<SchedulerThread>(this));
 	}
 
+	//work_processer
 	work_processers_.push_back(&main_processer_);
 	for (const SchedulerThread::Ptr& thread : threads_) {
 		work_processers_.push_back(thread->startSchedule());
@@ -63,7 +64,8 @@ void Scheduler::addTask(Coroutine::Func task, std::string name) {
 Processer* Scheduler::pickOneProcesser() {
 	MutexGuard lock(mutex_);
 	static size_t index = 0;
-	LOG_DEBUG << index << "," << work_processers_.size();
+	LOG_DEBUG << "index:" << index << ", work_processer size:" << work_processers_.size();
+
 	assert(index < work_processers_.size());
 	Processer* picked = work_processers_[index++];
 	index = index % work_processers_.size();

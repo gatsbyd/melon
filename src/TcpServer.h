@@ -26,7 +26,7 @@ private:
 	void startAccept();
 
 	IpAddress listen_addr_;
-	Socket listen_socket_;
+	Socket::Ptr listen_socket_;
 	Scheduler* scheduler_;
 };
 

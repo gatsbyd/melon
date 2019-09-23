@@ -34,8 +34,8 @@ public:
 	ssize_t write(const void *buf, size_t count);
 	void shutdownWrite();
 
-	static void SetNonBlockAndCloseOnExec(int fd);
-	static int CreateNonBlockSocket();
+	void SetNonBlockAndCloseOnExec();
+	static Socket::Ptr CreateTcp();
 	static int GetSocketError(int sockfd);
 
 private:

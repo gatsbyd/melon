@@ -17,7 +17,9 @@ TcpClient::TcpClient(IpAddress server_addr)
 TcpConnection::Ptr TcpClient::connect() {
 retry:
 	{
-		Socket::Ptr sock = std::make_shared<Socket>(Socket::CreateNonBlockSocket());
+		Socket::Ptr sock = Socket::CreateTcp();
+		sock->SetNonBlockAndCloseOnExec();
+
 		int ret = sock->connect(server_addr_);
 		if (ret == 0) {
 			return std::make_shared<TcpConnection>(sock, server_addr_);
@@ -30,7 +32,7 @@ retry:
 			sleep(retry_delay_ms_);
 			goto retry;
 		} else {
-			LOG_ERROR << "connect error in TcpClinet::startConnect " << strerror(errno);
+			LOG_ERROR << "connect error in TcpClinet::startConnect, " << strerror(errno);
 			return nullptr;
 		}
 		

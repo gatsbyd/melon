@@ -1,13 +1,14 @@
 #include "Log.h"
 #include "TcpClient.h"
 #include "Scheduler.h"
-#include "GoStyleSyntax.h"
 
 #include <unistd.h>
 
 using namespace melon;
 
-void echoCli(TcpConnection::Ptr conn) {
+void echoCli(TcpClient client) {
+	TcpConnection::Ptr conn = client.connect();
+
 	int n;
 	char send[1024];
 	char recv[1024];
@@ -25,14 +26,15 @@ int main(int argc, char* argv[]) {
 	if (argc < 3) {
 		printf("Usage:%s serverip port\n", argv[0]);
 	}
-	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	IpAddress server_addr(argv[1], atoi(argv[2]));
+	Scheduler scheduler;
+
 	TcpClient client(server_addr);
-	TcpConnection::Ptr conn = client.connect();
+	scheduler.addTask(std::bind(echoCli, client));
 
-	go std::bind(echoCli, conn);
+	scheduler.start();
 
-	SchedulerSingleton::getInstance()->start();
 	return 0;
 }

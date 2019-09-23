@@ -36,8 +36,6 @@ int Socket::accept(IpAddress& peer) {
 	if (connfd < 0) {
 		LOG_ERROR << "accept: " << strerror(errno);
 	}
-	SetNonBlockAndCloseOnExec(connfd);
-
 	return connfd;
 }
 
@@ -100,30 +98,29 @@ void Socket::shutdownWrite() {
 	}
 }
 
-void Socket::SetNonBlockAndCloseOnExec(int fd) {
-	int flags = ::fcntl(fd, F_GETFL, 0);
+void Socket::SetNonBlockAndCloseOnExec() {
+	int flags = ::fcntl(fd_, F_GETFL, 0);
 	flags |= O_NONBLOCK;
-	int ret = ::fcntl(fd, F_SETFL, flags);
+	int ret = ::fcntl(fd_, F_SETFL, flags);
 	if (ret == -1) {
-		LOG_FATAL << "fcntl: fd=" << fd << ", " << strerror(errno);
+		LOG_FATAL << "fcntl: fd=" << fd_ << ", " << strerror(errno);
 	}
 
-	flags = ::fcntl(fd, F_GETFD, 0);
+	flags = ::fcntl(fd_, F_GETFD, 0);
 	flags |= FD_CLOEXEC;
-	ret = ::fcntl(fd, F_SETFD, flags);
+	ret = ::fcntl(fd_, F_SETFD, flags);
 	if (ret == -1) {
-		LOG_FATAL << "fcntl: fd=" << fd << ","  << strerror(errno);
+		LOG_FATAL << "fcntl: fd=" << fd_ << ","  << strerror(errno);
 	}
 }
 
-int Socket::CreateNonBlockSocket() {
+Socket::Ptr Socket::CreateTcp() {
 	int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		LOG_FATAL << "socket: " << strerror(errno);
 	}
 
-	SetNonBlockAndCloseOnExec(fd);
-	return fd;
+	return std::make_shared<Socket>(fd);
 }
 
 int Socket::GetSocketError(int sockfd)
