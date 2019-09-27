@@ -30,11 +30,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # ---[ Subdirectories
 add_subdirectory(test)
 add_subdirectory(src)
+add_subdirectory(example)
 
-message(STATUS "CMAKE_CXX_FLAGS=" "${CMAKE_CXX_FLAGS}")
+#message(STATUS "CMAKE_CXX_FLAGS=" "${CMAKE_CXX_FLAGS}")
 
-message(STATUS "PROJECT_BINARY_DIR=" "${PROJECT_BINARY_DIR}")
+#message(STATUS "PROJECT_BINARY_DIR=" "${PROJECT_BINARY_DIR}")
 
-message(STATUS "PROJECT_SOURCE_DIR=" "${PROJECT_SOURCE_DIR}")
+#message(STATUS "PROJECT_SOURCE_DIR=" "${PROJECT_SOURCE_DIR}")
 
-message(STATUS "CMAKE_BINARY_DIR=" "${CMAKE_BINARY_DIR}")
+#message(STATUS "CMAKE_BINARY_DIR=" "${CMAKE_BINARY_DIR}")

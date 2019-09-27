@@ -11,11 +11,11 @@ class HttpServer : public TcpServer {
 public:
 	HttpServer(const IpAddress& listen_addr, Scheduler* scheduler);
 	~HttpServer() {}
-	
-protected:
-	virtual void handleClient(TcpConnection::Ptr conn) override;
 
+private:
+	void handleClient(TcpConnection::Ptr conn);
 };
+
 
 }
 }

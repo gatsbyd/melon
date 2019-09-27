@@ -2,11 +2,15 @@
 #include "HttpConnection.h"
 #include "Log.h"
 
+#include <functional>
+
 namespace melon {
 namespace http {
 
 HttpServer::HttpServer(const IpAddress& listen_addr, Scheduler* scheduler)
-		:TcpServer(listen_addr, scheduler) {}
+		:TcpServer(listen_addr, scheduler) {
+	setConnectionHandler(std::bind(&HttpServer::handleClient, this, std::placeholders::_1));	
+}
 
 void HttpServer::handleClient(TcpConnection::Ptr conn) {
 	HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);

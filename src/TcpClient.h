@@ -7,7 +7,7 @@ namespace melon {
 
 class TcpClient {
 public:
-	TcpClient(IpAddress server_addr);
+	TcpClient(const IpAddress& server_addr);
 	virtual ~TcpClient() {}
 
 	TcpConnection::Ptr connect();

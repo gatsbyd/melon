@@ -10,7 +10,7 @@ namespace melon {
 
 const int TcpClient::kMaxRetryDelayMs;
 
-TcpClient::TcpClient(IpAddress server_addr)
+TcpClient::TcpClient(const IpAddress& server_addr)
 	:server_addr_(server_addr) {
 }
 

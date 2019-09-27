@@ -10,7 +10,8 @@ namespace melon {
 TcpServer::TcpServer(const IpAddress& listen_addr, Scheduler* scheduler)
 	:listen_addr_(listen_addr),
 	listen_socket_(Socket::CreateTcp()),
-	scheduler_(scheduler) {
+	scheduler_(scheduler),
+	connection_handler_(defualtHandler) {
 
 	listen_socket_->SetNonBlockAndCloseOnExec();
 	listen_socket_->bind(listen_addr_);
@@ -29,11 +30,16 @@ void TcpServer::startAccept() {
 
 		Socket::Ptr socket = std::make_shared<Socket>(connfd);
 		socket->SetNonBlockAndCloseOnExec();
-		scheduler_->addTask(std::bind(&TcpServer::handleClient, this, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
+		scheduler_->addTask(std::bind(connection_handler_, std::make_shared<TcpConnection>(socket, peer_addr)), "Connect");
 	}
 }
 
-void TcpServer::handleClient(TcpConnection::Ptr connection) {
+void TcpServer::setConnectionHandler(ConnectionHanlder&& handler) {
+	connection_handler_ = handler;
+}
+
+
+void defualtHandler(TcpConnection::Ptr connection) {
 	LOG_INFO << "new connection, peer addr:" << connection->peerAddr().toString();
 }
 

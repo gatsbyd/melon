@@ -14,13 +14,12 @@ class Scheduler;
 
 class TcpServer : public Noncopyable {
 public:
+	typedef std::function<void (TcpConnection::Ptr)> ConnectionHanlder;
 	TcpServer(const IpAddress& listen_addr, Scheduler* scheduler);
 	~TcpServer() {}
 	
 	void start();
-
-protected:
-	virtual void handleClient(TcpConnection::Ptr connection);
+	void setConnectionHandler(ConnectionHanlder&& handler);
 
 private:
 	void startAccept();
@@ -28,7 +27,10 @@ private:
 	IpAddress listen_addr_;
 	Socket::Ptr listen_socket_;
 	Scheduler* scheduler_;
+	ConnectionHanlder connection_handler_;
 };
+
+void defualtHandler(TcpConnection::Ptr connection);
 
 }
 
