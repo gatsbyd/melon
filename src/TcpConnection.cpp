@@ -17,7 +17,7 @@ ssize_t TcpConnection::readn(void* buf, size_t count) {
 	while (left > 0) {
 		ssize_t n = read(static_cast<char*>(buf) + readn, left);
 		if (n <= 0) {
-			return n;
+			return readn;
 		}
 		readn += n;
 		left -= n;
@@ -30,14 +30,14 @@ ssize_t TcpConnection::write(const void* buf, size_t count) {
 }
 
 ssize_t TcpConnection::writen(const void* buf, size_t count) {
-	size_t readn = 0;
+	size_t writen = 0;
 	size_t left = count;
 	while (left > 0) {
-		ssize_t n = write(static_cast<const char*>(buf) + readn, left);
+		ssize_t n = write(static_cast<const char*>(buf) + writen, left);
 		if (n <= 0) {
-			return n;
+			return writen;
 		}
-		readn += n;
+		writen += n;
 		left -= n;
 	}
 	return count;

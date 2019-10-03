@@ -130,11 +130,12 @@ int Socket::GetSocketError(int sockfd)
 
   if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
   {
-    return errno;
+    return errno;	//Solaris
   }
   else
   {
-    return optval;
+	errno = optval;
+    return optval;	//Berkeley
   }
 }
 }
