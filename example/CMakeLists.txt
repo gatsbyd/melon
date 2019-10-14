@@ -27,6 +27,8 @@ foreach(test_src ${test_srcs} )
 
     # link libraries
     target_link_libraries(${test_name} melon)
+    target_link_libraries(${test_name} gd)
+
 
     # set target properties
     set_target_properties(${test_name}
