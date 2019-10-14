@@ -24,6 +24,7 @@ Scheduler::Scheduler(size_t thread_number)
 	}
 
 	timer_thread_ = std::make_shared<SchedulerThread>(this);
+	timer_processer_ = timer_thread_->startSchedule();
 }
 
 Scheduler::~Scheduler() {
@@ -31,7 +32,6 @@ Scheduler::~Scheduler() {
 }
 
 void Scheduler::start() {
-	timer_processer_ = timer_thread_->startSchedule();
 	timer_processer_->addTask([&]() {
 						while (true) {
 							timer_manager_->dealWithExpiredTimer();
@@ -80,5 +80,15 @@ void Scheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
 	}
 	timer_manager_->addTimer(when, coroutine, processer); //threa-save
 }
+
+void Scheduler::runEvery(uint64_t interval, Coroutine::Ptr coroutine) {
+	Processer* processer = Processer::GetProcesserOfThisThread();
+	if (processer == nullptr) {
+		processer = pickOneProcesser();
+	}
+	Timestamp when = Timestamp::now() + interval * Timestamp::kMicrosecondsPerSecond;
+	timer_manager_->addTimer(when, coroutine, processer, interval);
+}
+
 
 }

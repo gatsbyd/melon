@@ -57,6 +57,7 @@ void Processer::run() {
 			//没有协程时执行poll协程
 			if (coroutines_.empty()) {
 				cur = poll_coroutine;
+				poller_.setPolling(true);
 			} else {
 				for (auto it = coroutines_.begin();
 						it != coroutines_.end();

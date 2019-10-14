@@ -42,6 +42,7 @@ int createTimerFd();
 class TimerManager {
 friend class Scheduler;
 public:
+	typedef std::function<void ()> Callback;
 	TimerManager() 
 		:timer_fd_(createTimerFd()) {}
 	~TimerManager() {

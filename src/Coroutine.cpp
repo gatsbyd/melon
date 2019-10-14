@@ -19,7 +19,6 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 	state_(CoroutineState::INIT) {
 	assert(stack_size > 0);
 	
-	LOG_DEBUG << "create coroutine:" << name_;
 	stack_ = malloc(stack_size_);
 	if (!stack_) {
 		LOG_ERROR << "run out of memory";
@@ -40,7 +39,6 @@ Coroutine::Coroutine()
 	:c_id_(++t_coroutine_id),
 	name_("Main-" + std::to_string(c_id_)),
 	state_(CoroutineState::INIT) {
-	LOG_DEBUG << "create coroutine:" << name_;
 	
 	if (getcontext(&context_)) {
 		LOG_ERROR << "getcontext: errno=" << errno
@@ -90,6 +88,10 @@ void Coroutine::swapIn() {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
 	}
+}
+
+Coroutine::Func Coroutine::getCallback() {
+	return cb_;
 }
 
 uint64_t Coroutine::GetCid() {

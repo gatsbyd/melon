@@ -4,6 +4,12 @@
 #include <gdfonts.h>
 #include <string>
 #include <vector>
+#include <stdio.h>
+#include <iostream>
+
+#include "Singleton.h"
+#include "Log.h"
+#include "Scheduler.h"
 
 typedef struct gdImageStruct* gdImagePtr;
 
@@ -154,3 +160,17 @@ std::string Plot::toPng()
   return result;
 }
 
+using namespace melon;
+
+int main(int argc, char* argv[]) {
+	(void) argc;
+	(void) argv;
+	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+
+	Scheduler scheduler;
+	scheduler.runEvery(3, std::make_shared<Coroutine>([]() {
+								printf("++++++++++++++++++++++++++++++++++++++++++++\n");
+							}));
+	scheduler.start();
+	return 0;
+}

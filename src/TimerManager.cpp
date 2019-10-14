@@ -1,7 +1,6 @@
 #include "Processer.h"
 #include "Log.h"
 #include "TimerManager.h"
-#include "Hook.h"
 
 #include <assert.h>
 #include <unistd.h>
@@ -49,6 +48,7 @@ void TimerManager::resetTimerFd(Timestamp when) {
 	if (timerfd_settime(timer_fd_, 0, &new_value, nullptr)) {
 		LOG_ERROR << "timerfd_settime:" << strerror(errno);
 	}
+	LOG_DEBUG << "reset timerfd at " << when;
 }
 
 ssize_t TimerManager::readTimerFd() {
@@ -71,8 +71,14 @@ void TimerManager::dealWithExpiredTimer() {
 	for (const std::pair<Timestamp, Timer::Ptr>& pair : expired) {
 		assert(pair.second->getProcesser() != nullptr);
 		pair.second->getProcesser()->addTask(pair.second->getCoroutine());
+
+		if (pair.second->getInterval() > 0) {
+			addTimer(pair.first + pair.second->getInterval() * Timestamp::kMicrosecondsPerSecond,
+					std::make_shared<Coroutine>(pair.second->getCoroutine()->getCallback()),
+					pair.second->getProcesser(),
+					pair.second->getInterval());
+		}
 	}
-	//todo:周期执行
 	
 	if (!timer_map_.empty()) {
 		resetTimerFd(timer_map_.begin()->first);

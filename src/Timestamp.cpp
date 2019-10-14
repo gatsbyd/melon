@@ -15,11 +15,11 @@ Timestamp Timestamp::now() {
 	return Timestamp(tv.tv_sec * kMicrosecondsPerSecond + tv.tv_usec);
 }
 
-time_t Timestamp::getSec() {
+time_t Timestamp::getSec() const {
 	return microseconds_from_epoch_ / kMicrosecondsPerSecond;
 }
 
-suseconds_t Timestamp::getUsec() {
+suseconds_t Timestamp::getUsec() const {
 	return microseconds_from_epoch_ % kMicrosecondsPerSecond;
 }
 

@@ -33,7 +33,7 @@ std::string Poller::eventToString(int event) {
 }
 
 PollPoller::PollPoller(Processer* processer)
-	:is_polling(false),
+	:is_polling_(false),
 	processer_(processer) {
 }	
 
@@ -86,9 +86,9 @@ void PollPoller::removeEvent(int fd) {
 
 void PollPoller::poll(int timeout) {
 	while (!processer_->stoped()) {
-		is_polling = true;
+		is_polling_ = true;
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
-		is_polling = false;
+		is_polling_ = false;
 		if (num == 0) {
 			LOG_INFO << "PollPoller::poll nothing happened";
 		} else if (num < 0) {

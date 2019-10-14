@@ -24,13 +24,14 @@ public:
 	typedef std::function<void ()> Func;
 	typedef std::shared_ptr<Coroutine> Ptr;
 
-	Coroutine(Func cb, std::string name = "", uint32_t stack_size = kStackSize);
+	Coroutine(Func cb, std::string name = "anonymous", uint32_t stack_size = kStackSize);
 	~Coroutine();
 
 	//切换到当前线程的主协程
 	static void SwapOut();
 	//执行当前协程
 	void swapIn();
+	Coroutine::Func getCallback();
 	std::string name();
 	void setState(CoroutineState state) { state_ = state; };
 	CoroutineState getState() { return state_; }

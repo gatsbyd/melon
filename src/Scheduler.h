@@ -27,6 +27,7 @@ public:
 	void stop();
 	void addTask(Coroutine::Func task, std::string name = "");
 	void runAt(Timestamp when, Coroutine::Ptr coroutine);
+	void runEvery(uint64_t interval, Coroutine::Ptr coroutine);
 
 protected:
 	Processer* pickOneProcesser();
