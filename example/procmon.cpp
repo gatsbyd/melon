@@ -1,15 +1,19 @@
 #include <algorithm>
-#include <math.h>
+#include <fcntl.h>
 #include <gd.h>
 #include <gdfonts.h>
-#include <string>
-#include <vector>
-#include <stdio.h>
 #include <iostream>
+#include <math.h>
+#include <string>
+#include <stdio.h>
+#include <unistd.h>
+#include <vector>
 
-#include "Singleton.h"
+#include "Address.h"
 #include "Log.h"
+#include "Singleton.h"
 #include "Scheduler.h"
+#include "TcpServer.h"
 
 typedef struct gdImageStruct* gdImagePtr;
 
@@ -161,16 +165,87 @@ std::string Plot::toPng()
 }
 
 using namespace melon;
+using namespace std;
+
+bool processExists(pid_t pid)
+{
+  	char filename[256];
+  	snprintf(filename, sizeof filename, "/proc/%d/stat", pid);
+  	return ::access(filename, R_OK) == 0;
+}
+
+class Procmon {
+public:
+	Procmon(Scheduler* scheduler, int pid, uint16_t port)
+		: server_(IpAddress(port), scheduler),
+		  clock_tick_per_seconds_(static_cast<int>(::sysconf(_SC_CLK_TCK))),
+		  pid_(pid),
+		  ticks_(0),
+	      procname_(getProcname(readProcFile("stat"))) {
+
+		}
+
+	void start() {
+
+	}
+
+	ssize_t readFile(string filename, string& content) {
+		int fd = ::open(filename.c_str(), O_RDONLY | O_CLOEXEC);
+		char buf[65535];
+		ssize_t readn = 0;
+		ssize_t n = 0;
+		while ( (n = ::read(fd, buf, sizeof(buf)) > 0 ) ) {
+			content.append(buf, n);
+			readn += n;
+		}
+
+		::close(fd);
+		return readn;
+	}
+
+	string readProcFile(const char* basename)
+	{
+		char filename[256];
+		snprintf(filename, sizeof filename, "/proc/%d/%s", pid_, basename);
+		string content;
+		readFile(filename, content);
+		return content;
+	}
+
+	string getProcname(const string& stat) {
+		string name;
+		size_t lp = stat.find('(');
+		size_t rp = stat.rfind(')');
+		if (lp != string::npos && rp != string::npos && lp < rp) {
+			name = stat.substr(lp, rp - lp);
+		}
+		return name;
+	}
+
+private:
+	TcpServer server_;
+	int clock_tick_per_seconds_;
+	int pid_;
+	int ticks_;
+	const string procname_;
+};
 
 int main(int argc, char* argv[]) {
-	(void) argc;
-	(void) argv;
 	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	if (argc < 3) {
+		printf("Usage: %s pid port\n", argv[0]);
+		return 0;
+	}
+	int pid = atoi(argv[1]);
+	uint16_t port = static_cast<uint16_t>(atoi(argv[2]));
+	if (!processExists(pid)) {
+		printf("process %d doesn't exist\n", pid);
+		return 1;
+	}
 
 	Scheduler scheduler;
-	scheduler.runEvery(3, std::make_shared<Coroutine>([]() {
-								printf("++++++++++++++++++++++++++++++++++++++++++++\n");
-							}));
+	Procmon procmon(&scheduler, pid, port);
+	procmon.start();
 	scheduler.start();
 	return 0;
 }
