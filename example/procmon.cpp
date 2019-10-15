@@ -1,16 +1,20 @@
 #include <algorithm>
+#include <assert.h>
 #include <fcntl.h>
+#include <functional>
 #include <gd.h>
 #include <gdfonts.h>
 #include <iostream>
 #include <math.h>
 #include <string>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
 
 #include "Address.h"
 #include "Log.h"
+#include "http/HttpConnection.h"
 #include "Singleton.h"
 #include "Scheduler.h"
 #include "TcpServer.h"
@@ -67,10 +71,8 @@ Plot::Plot(int width, int height, int totalSeconds, int samplingPeriod)
     gray_(gdImageColorAllocate(image_, 200, 200, 200)),
     blue_(gdImageColorAllocate(image_, 128, 128, 255)),
     kRightMargin_(3 * fontWidth_ + 5),
-    ratioX_(static_cast<double>(samplingPeriod_ * (width_ - kLeftMargin_ - kRightMargin_)) / totalSeconds_)
-{
-  // gdImageSetAntiAliased(image_, black_);
-}
+    ratioX_(static_cast<double>(samplingPeriod_ * (width_ - kLeftMargin_ - kRightMargin_)) / totalSeconds_){
+	}
 
 Plot::~Plot()
 {
@@ -165,6 +167,7 @@ std::string Plot::toPng()
 }
 
 using namespace melon;
+using namespace melon::http;
 using namespace std;
 
 bool processExists(pid_t pid)
@@ -174,19 +177,128 @@ bool processExists(pid_t pid)
   	return ::access(filename, R_OK) == 0;
 }
 
+struct StatData
+{
+  void parse(string content, int kbPerPage)
+  {
+	size_t rp = content.rfind(')');
+    std::istringstream iss(content.data() + rp + 1);
+
+    //            0    1    2    3     4    5       6   7 8 9  11  13   15
+    // 3770 (cat) R 3718 3770 3718 34818 3770 4202496 214 0 0 0 0 0 0 0 20
+    // 16  18     19      20 21                   22      23      24              25
+    //  0 1 0 298215 5750784 81 18446744073709551615 4194304 4242836 140736345340592
+    //              26
+    // 140736066274232 140575670169216 0 0 0 0 0 0 0 17 0 0 0 0 0 0
+
+    iss >> state;
+    iss >> ppid >> pgrp >> session >> tty_nr >> tpgid >> flags;
+    iss >> minflt >> cminflt >> majflt >> cmajflt;
+    iss >> utime >> stime >> cutime >> cstime;
+    iss >> priority >> nice >> num_threads >> itrealvalue >> starttime;
+    long vsize, rss;
+    iss >> vsize >> rss >> rsslim;
+    vsizeKb = vsize / 1024;
+    rssKb = rss * kbPerPage;
+  }
+  char state;
+  int ppid;
+  int pgrp;
+  int session;
+  int tty_nr;
+  int tpgid;
+  int flags;
+
+  long minflt;
+  long cminflt;
+  long majflt;
+  long cmajflt;
+
+  long utime;
+  long stime;
+  long cutime;
+  long cstime;
+
+  long priority;
+  long nice;
+  long num_threads;
+  long itrealvalue;
+  long starttime;
+
+  long vsizeKb;
+  long rssKb;
+  long rsslim;
+};
+
+
 class Procmon {
 public:
 	Procmon(Scheduler* scheduler, int pid, uint16_t port)
-		: server_(IpAddress(port), scheduler),
+		: scheduler_(scheduler),
+	   	  server_(IpAddress(port), scheduler),
+		  kb_per_page_(static_cast<int>(::sysconf(_SC_PAGE_SIZE)) / 1024),
 		  clock_tick_per_seconds_(static_cast<int>(::sysconf(_SC_CLK_TCK))),
 		  pid_(pid),
 		  ticks_(0),
-	      procname_(getProcname(readProcFile("stat"))) {
-
+	      procname_(getProcname(readProcFile("stat"))),
+	      cpu_chart_(640, 100, 600, kPeriod_),
+		  cpu_usage_max_size_(600 / kPeriod_) {
+			memset(&last_stat_data_, 0, sizeof last_stat_data_);		
+			server_.setConnectionHandler(std::bind(&Procmon::connectionHandler, this, std::placeholders::_1));
 		}
 
 	void start() {
+		tick();
+		scheduler_->runEvery(kPeriod_, std::make_shared<Coroutine>(std::bind(&Procmon::tick, this)));
+		server_.start();
+	}
 
+private:
+	void connectionHandler(TcpConnection::Ptr conn) {
+		HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);	
+		HttpRequest::Ptr request = http_conn->recvRequest();		
+		printf("http request path:%s\n", request->getPath().c_str());
+
+		HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
+		if (request->getPath() == "/") {
+			
+		} else if (request->getPath() == "/cpu.png") {
+			std::vector<double> cpu_usage;
+			for (const auto item : cpu_usage_)
+				cpu_usage.push_back(item.cpuUsage(kPeriod_, clock_tick_per_seconds_));
+			string png = cpu_chart_.plotCpu(cpu_usage);
+			rsp->setHeader("Content-Type", "image/png");
+			rsp->setContent(png.c_str());
+		} else {
+			rsp->setHttpStatus(HttpStatus::NOT_FOUND);
+		}
+
+		http_conn->sendResponse(rsp);
+	}
+
+	void tick() {
+		string stat = readProcFile("stat");  
+		if (stat.empty())
+      		return;
+    	StatData statData;
+    	memset(&statData, 0, sizeof statData);
+    	statData.parse(stat, kb_per_page_);
+		if (ticks_ > 0)
+    	{
+      		CpuTime time;
+      		time.userTime_ = std::max(0, static_cast<int>(statData.utime - last_stat_data_.utime));
+      		time.sysTime_ = std::max(0, static_cast<int>(statData.stime - last_stat_data_.stime));
+			if (cpu_usage_.size() >= cpu_usage_max_size_) {
+				cpu_usage_.pop_front();
+			}
+			cpu_usage_.push_back(time);
+			assert(cpu_usage_.size() <= cpu_usage_max_size_);
+
+			printf("userTime:%d, sysTime:%d\n", time.userTime_, time.sysTime_);
+    	}
+
+    	last_stat_data_ = statData;
+    	++ticks_;	
 	}
 
 	ssize_t readFile(string filename, string& content) {
@@ -203,8 +315,7 @@ public:
 		return readn;
 	}
 
-	string readProcFile(const char* basename)
-	{
+	string readProcFile(const char* basename) {
 		char filename[256];
 		snprintf(filename, sizeof filename, "/proc/%d/%s", pid_, basename);
 		string content;
@@ -222,16 +333,30 @@ public:
 		return name;
 	}
 
-private:
+	struct CpuTime {
+		int userTime_;
+		int sysTime_;
+		double cpuUsage(double kPeriod, double kClockTicksPerSecond) const {
+			return (userTime_ + sysTime_) / (kClockTicksPerSecond * kPeriod);
+		}
+	};
+
+	Scheduler* scheduler_;
 	TcpServer server_;
-	int clock_tick_per_seconds_;
-	int pid_;
+	const int kb_per_page_;
+	const static int kPeriod_ = 2.0;
+	const int clock_tick_per_seconds_;
+	const int pid_;
 	int ticks_;
 	const string procname_;
+	StatData last_stat_data_;
+	Plot cpu_chart_;
+	uint32_t cpu_usage_max_size_;
+	list<CpuTime> cpu_usage_;
 };
 
 int main(int argc, char* argv[]) {
-	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	if (argc < 3) {
 		printf("Usage: %s pid port\n", argv[0]);
 		return 0;
