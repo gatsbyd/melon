@@ -260,20 +260,43 @@ private:
 		printf("http request path:%s\n", request->getPath().c_str());
 
 		HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
+		rsp->setHttpStatus(HttpStatus::OK);
 		if (request->getPath() == "/") {
+			rsp->setHeader("Content-Type", "text/html");		
+			string response;
+			appendResponse(response, "<html><head><title>%s</title>\n", procname_.c_str());
+			appendResponse(response, "<meta http-equiv=\"refresh\" content=\"%d\">\n", 3);
+			response.append("</head><body>\n");
+			response.append("<p><table>");
+
+			appendTableRow(response, "CPU usage", "<img src=\"/cpu.png\" height=\"100\" witdh=\"640\">");
 			
+			response.append("</table>");
+			response.append("</body></html>");
+
+			rsp->setContent(response);
 		} else if (request->getPath() == "/cpu.png") {
 			std::vector<double> cpu_usage;
 			for (const auto item : cpu_usage_)
 				cpu_usage.push_back(item.cpuUsage(kPeriod_, clock_tick_per_seconds_));
 			string png = cpu_chart_.plotCpu(cpu_usage);
 			rsp->setHeader("Content-Type", "image/png");
-			rsp->setContent(png.c_str());
+
+			rsp->setContent(png);
+
+			printf("cpu.png size:%lu bytes\n", png.size());
+			FILE* fp = fopen("test.png", "wb");
+			fwrite(png.c_str(), 1, png.size(), fp);
+			fclose(fp);
 		} else {
 			rsp->setHttpStatus(HttpStatus::NOT_FOUND);
 		}
 
 		http_conn->sendResponse(rsp);
+
+		conn->shutdown();
+		char buf[1024];
+		while (conn->read(buf, sizeof buf) > 0) {}
 	}
 
 	void tick() {
@@ -300,6 +323,19 @@ private:
     	last_stat_data_ = statData;
     	++ticks_;	
 	}
+
+	void appendResponse(string& response, const char* fmt, ...) {
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof buf, fmt, args);
+		va_end(args);
+		response.append(buf);
+	}
+
+	void appendTableRow(string& response, const char* name, string value) {
+		appendResponse(response, "<tr><td>%s</td><td>%s</td></tr>\n", name, value.c_str());
+  	}
 
 	ssize_t readFile(string filename, string& content) {
 		int fd = ::open(filename.c_str(), O_RDONLY | O_CLOEXEC);
