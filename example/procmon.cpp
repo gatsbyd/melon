@@ -257,7 +257,6 @@ private:
 	void connectionHandler(TcpConnection::Ptr conn) {
 		HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);	
 		HttpRequest::Ptr request = http_conn->recvRequest();		
-		printf("http request path:%s\n", request->getPath().c_str());
 
 		HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
 		rsp->setHttpStatus(HttpStatus::OK);
@@ -277,14 +276,16 @@ private:
 			rsp->setContent(response);
 		} else if (request->getPath() == "/cpu.png") {
 			std::vector<double> cpu_usage;
-			for (const auto item : cpu_usage_)
+			for (const auto& item : cpu_usage_)
 				cpu_usage.push_back(item.cpuUsage(kPeriod_, clock_tick_per_seconds_));
 			string png = cpu_chart_.plotCpu(cpu_usage);
 			rsp->setHeader("Content-Type", "image/png");
 
 			rsp->setContent(png);
 
-			printf("cpu.png size:%lu bytes\n", png.size());
+			for (const auto& usage: cpu_usage) {
+				printf("%f ", usage);
+			}
 			FILE* fp = fopen("test.png", "wb");
 			fwrite(png.c_str(), 1, png.size(), fp);
 			fclose(fp);
@@ -316,8 +317,6 @@ private:
 			}
 			cpu_usage_.push_back(time);
 			assert(cpu_usage_.size() <= cpu_usage_max_size_);
-
-			printf("userTime:%d, sysTime:%d\n", time.userTime_, time.sysTime_);
     	}
 
     	last_stat_data_ = statData;
@@ -336,19 +335,15 @@ private:
 	void appendTableRow(string& response, const char* name, string value) {
 		appendResponse(response, "<tr><td>%s</td><td>%s</td></tr>\n", name, value.c_str());
   	}
-
+public:
 	ssize_t readFile(string filename, string& content) {
-		int fd = ::open(filename.c_str(), O_RDONLY | O_CLOEXEC);
+		FILE* fp = ::fopen(filename.c_str(), "r");
 		char buf[65535];
-		ssize_t readn = 0;
-		ssize_t n = 0;
-		while ( (n = ::read(fd, buf, sizeof(buf)) > 0 ) ) {
-			content.append(buf, n);
-			readn += n;
-		}
+		size_t n = ::fread(static_cast<void*>(buf), 1, sizeof buf, fp);
+		content.append(buf, n);
 
-		::close(fd);
-		return readn;
+		::fclose(fp);
+		return n;
 	}
 
 	string readProcFile(const char* basename) {
