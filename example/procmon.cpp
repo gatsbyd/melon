@@ -268,6 +268,15 @@ private:
 			response.append("</head><body>\n");
 			response.append("<p><table>");
 
+			appendTableRow(response, "Procname", procname_);
+			appendTableRow(response, "PID", pid_);
+			appendTableRow(response, "State", last_stat_data_.state);
+			appendTableRow(response, "User time (s)", last_stat_data_.utime / clock_tick_per_seconds_);
+			appendTableRow(response, "System time (s)", last_stat_data_.stime / clock_tick_per_seconds_);
+			appendTableRow(response, "VmSize (KiB)", last_stat_data_.vsizeKb);
+			appendTableRow(response, "VmRSS (KiB)", last_stat_data_.rssKb);
+			appendTableRow(response, "Threads", last_stat_data_.num_threads);
+			appendTableRow(response, "Priority", last_stat_data_.priority);
 			appendTableRow(response, "CPU usage", "<img src=\"/cpu.png\" height=\"100\" witdh=\"640\">");
 			
 			response.append("</table>");
@@ -282,13 +291,6 @@ private:
 			rsp->setHeader("Content-Type", "image/png");
 
 			rsp->setContent(png);
-
-			for (const auto& usage: cpu_usage) {
-				printf("%f ", usage);
-			}
-			FILE* fp = fopen("test.png", "wb");
-			fwrite(png.c_str(), 1, png.size(), fp);
-			fclose(fp);
 		} else {
 			rsp->setHttpStatus(HttpStatus::NOT_FOUND);
 		}
@@ -327,9 +329,13 @@ private:
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
-		vsnprintf(buf, sizeof buf, fmt, args);
+		int n = vsnprintf(buf, sizeof buf, fmt, args);
 		va_end(args);
-		response.append(buf);
+		response.append(buf, n);
+	}
+
+	void appendTableRow(string& response, const char* name, long value) {
+		appendResponse(response, "<tr><td>%s</td><td>%ld</td></tr>\n", name, value);
 	}
 
 	void appendTableRow(string& response, const char* name, string value) {
@@ -359,7 +365,7 @@ public:
 		size_t lp = stat.find('(');
 		size_t rp = stat.rfind(')');
 		if (lp != string::npos && rp != string::npos && lp < rp) {
-			name = stat.substr(lp, rp - lp);
+			name = stat.substr(lp + 1, rp - lp - 1);
 		}
 		return name;
 	}
@@ -387,6 +393,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+	//Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	if (argc < 3) {
 		printf("Usage: %s pid port\n", argv[0]);

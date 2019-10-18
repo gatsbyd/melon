@@ -43,7 +43,6 @@ public:
 	bool isPolling() { return is_polling_; }
 	void setPolling(bool polling) { is_polling_ = polling; }
 private:
-
 	bool is_polling_;
 	std::vector<struct pollfd> pollfds_;
 	std::map<int, Coroutine::Ptr> fd_to_coroutine_;

@@ -5,6 +5,7 @@
 #include <error.h>
 #include <assert.h>
 #include <string.h>
+#include <sstream>
 
 namespace melon {
 
@@ -52,7 +53,8 @@ void PollPoller::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
 		std::string coroutine_name = coroutine->name();
 		LOG_DEBUG << "register:<" << fd << ", " << eventToString(events) << ", " << coroutine_name  << ">";
 	} else {
-		int index = it->second;
+		size_t index = it->second;
+		assert(index < pollfds_.size());
 		struct pollfd& pfd = pollfds_[index];
 		
 		LOG_DEBUG << "update:<" << fd << ", " << eventToString(pfd.events) << ", " << fd_to_coroutine_[fd]->name() << "> to " << "<" << fd << ", " << eventToString(events) << ", " <<  coroutine->name() << ">";
@@ -96,24 +98,26 @@ void PollPoller::poll(int timeout) {
 				LOG_ERROR << "poll error, errno: " << errno << ", error str:" << strerror(errno);
 			}
 		} else {
-			for (auto& pollfd : pollfds_) {
+			std::vector<int> active_fds;
+			for (const auto& pollfd : pollfds_) {
 				if (pollfd.revents > 0) {
 					--num;
-					auto coroutine = fd_to_coroutine_[pollfd.fd];
-					assert(coroutine != nullptr);
-					LOG_DEBUG << "new event arrive:<" << pollfd.fd << ", " << eventToString(pollfd.revents) << ", " << coroutine->name() << ">";
-
-					removeEvent(pollfd.fd);
-
-					//todo:有四类事件：1.可读，2.可写，3.关闭，4.错误 需要处理
-					coroutine->setState(CoroutineState::RUNNABLE);
-					processer_->addTask(coroutine);
-				}	
-
-				if (num == 0) {
-					break;
+					active_fds.push_back(pollfd.fd);
+					if (num == 0) {
+						break;
+					}
 				}
 			}
+			for (const auto& active_fd : active_fds) {
+				auto coroutine = fd_to_coroutine_[active_fd];
+				assert(coroutine != nullptr);
+
+				removeEvent(active_fd);
+
+				//todo:有四类事件：1.可读，2.可写，3.关闭，4.错误 需要处理
+				coroutine->setState(CoroutineState::RUNNABLE);
+				processer_->addTask(coroutine);
+			}	
 		}
 		Coroutine::SwapOut();
 	}
