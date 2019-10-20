@@ -70,7 +70,7 @@ void PollPoller::removeEvent(int fd) {
 	if (it == fd_to_index_.end()) {
 		return;
 	}
-	LOG_DEBUG << "remove fd " << fd << " from poller";
+	LOG_DEBUG << "unregister fd " << fd << " from poller";
 	size_t index = it->second;
 
 	fd_to_index_.erase(fd);

@@ -51,6 +51,7 @@ public:
 	
 	void addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval = 0);
 private:
+	bool findFirstTimestamp(const Timestamp&, Timestamp&);
 	ssize_t readTimerFd();
 	void resetTimerFd(Timestamp when);
 	void dealWithExpiredTimer();

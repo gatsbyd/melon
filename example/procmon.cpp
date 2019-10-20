@@ -256,46 +256,54 @@ public:
 private:
 	void connectionHandler(TcpConnection::Ptr conn) {
 		HttpConnection::Ptr http_conn = std::make_shared<HttpConnection>(conn);	
-		HttpRequest::Ptr request = http_conn->recvRequest();		
 
-		HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
-		rsp->setHttpStatus(HttpStatus::OK);
-		if (request->getPath() == "/") {
-			rsp->setHeader("Content-Type", "text/html");		
-			string response;
-			appendResponse(response, "<html><head><title>%s</title>\n", procname_.c_str());
-			//appendResponse(response, "<meta http-equiv=\"refresh\" content=\"%d\">\n", 3);
-			response.append("</head><body>\n");
-			response.append("<p><table>");
+		bool close = true;
+		do {
+			HttpRequest::Ptr request = http_conn->recvRequest();		
 
-			appendTableRow(response, "Procname", procname_);
-			appendTableRow(response, "PID", pid_);
-			appendTableRow(response, "State", getState(last_stat_data_.state));
-			appendTableRow(response, "User time (s)", last_stat_data_.utime / clock_tick_per_seconds_);
-			appendTableRow(response, "System time (s)", last_stat_data_.stime / clock_tick_per_seconds_);
-			appendTableRow(response, "VmSize (KiB)", last_stat_data_.vsizeKb);
-			appendTableRow(response, "VmRSS (KiB)", last_stat_data_.rssKb);
-			appendTableRow(response, "Threads", last_stat_data_.num_threads);
-			appendTableRow(response, "Priority", last_stat_data_.priority);
-			appendTableRow(response, "CPU usage", "<img src=\"/cpu.png\" height=\"100\" witdh=\"640\">");
+			const string& connection = request->getHeader("Connection", "close");
+			close = (connection == "close") || 
+					(request->getMajorVersion() == 1 && request->getMinorVersion() == 0 && connection != "Keep-Alive");
+
+			HttpResponse::Ptr rsp = std::make_shared<HttpResponse>();
+			rsp->setHttpStatus(HttpStatus::OK);
+			if (request->getPath() == "/") {
+				rsp->setHeader("Content-Type", "text/html");		
+				string response;
+				appendResponse(response, "<html><head><title>%s</title>\n", procname_.c_str());
+				//appendResponse(response, "<meta http-equiv=\"refresh\" content=\"%d\">\n", 3);
+				response.append("</head><body>\n");
+				response.append("<p><table>");
+
+				appendTableRow(response, "Procname", procname_);
+				appendTableRow(response, "PID", pid_);
+				appendTableRow(response, "State", getState(last_stat_data_.state));
+				appendTableRow(response, "User time (s)", last_stat_data_.utime / clock_tick_per_seconds_);
+				appendTableRow(response, "System time (s)", last_stat_data_.stime / clock_tick_per_seconds_);
+				appendTableRow(response, "VmSize (KiB)", last_stat_data_.vsizeKb);
+				appendTableRow(response, "VmRSS (KiB)", last_stat_data_.rssKb);
+				appendTableRow(response, "Threads", last_stat_data_.num_threads);
+				appendTableRow(response, "Priority", last_stat_data_.priority);
+				appendTableRow(response, "CPU usage", "<img src=\"/cpu.png\" height=\"100\" witdh=\"640\">");
 			
-			response.append("</table>");
-			response.append("</body></html>");
+				response.append("</table>");
+				response.append("</body></html>");
 
-			rsp->setContent(response);
-		} else if (request->getPath() == "/cpu.png") {
-			std::vector<double> cpu_usage;
-			for (const auto& item : cpu_usage_)
-				cpu_usage.push_back(item.cpuUsage(kPeriod_, clock_tick_per_seconds_));
-			string png = cpu_chart_.plotCpu(cpu_usage);
-			rsp->setHeader("Content-Type", "image/png");
+				rsp->setContent(response);
+			} else if (request->getPath() == "/cpu.png") {
+				std::vector<double> cpu_usage;
+				for (const auto& item : cpu_usage_)
+					cpu_usage.push_back(item.cpuUsage(kPeriod_, clock_tick_per_seconds_));
+				string png = cpu_chart_.plotCpu(cpu_usage);
+				rsp->setHeader("Content-Type", "image/png");
 
-			rsp->setContent(png);
-		} else {
-			rsp->setHttpStatus(HttpStatus::NOT_FOUND);
-		}
+				rsp->setContent(png);
+			} else {
+				rsp->setHttpStatus(HttpStatus::NOT_FOUND);
+			}
 
-		http_conn->sendResponse(rsp);
+			http_conn->sendResponse(rsp);
+		} while (!close);
 
 		conn->shutdown();
 		char buf[1024];
@@ -408,7 +416,12 @@ private:
 	list<CpuTime> cpu_usage_;
 };
 
+static void sighandler(int) {
+	exit(0);
+}
+
 int main(int argc, char* argv[]) {
+	signal(SIGUSR1, sighandler);
 	//Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	if (argc < 3) {

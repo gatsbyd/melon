@@ -191,7 +191,10 @@ public:
 	void setHttpStatus(HttpStatus status) { status_ = status; }
 	void setHeaders(const std::map<std::string, std::string>& headers) { headers_ = headers; }
 	void setHeader(const std::string& key, const std::string& value);
-	void setContent(const std::string& content) { content_ = content; }
+	void setContent(const std::string& content) { 
+		content_ = content; 
+		setHeader("Content-Length", std::to_string(content.size()));
+	}
 
 	//delete
 	void delHeader(const std::string& key);

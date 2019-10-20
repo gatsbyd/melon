@@ -4,6 +4,7 @@ project(ShinyVm CXX C)
 
 set(CXX_FLAGS
  -g
+ -pg
  -Wall
  -Wextra
  -Werror

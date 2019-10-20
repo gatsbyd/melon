@@ -8,6 +8,7 @@ namespace http {
 static const int kMaxHeadersNum = 30;
 	
 int HttpParser::parseRequest(HttpRequest& request, const char* buf, size_t len) {
+	LOG_DEBUG << "call parseRequest";
 	const char *method;
 	size_t method_len;
 	const char *path;

@@ -23,16 +23,20 @@ HttpRequest::Ptr HttpConnection::recvRequest() {
 
 	char* data = buffer_.get();
 	int result = -1;
-	int nread = 0;
+	int total_read = 0;
 
 	do {
-		nread = tcp_conn_->read(data + nread, s_buffer_size - nread);
-		if (nread < 0) {
+		int readn = tcp_conn_->read(data + total_read, s_buffer_size - total_read);
+		if (readn < 0) {
 			LOG_ERROR << "read < 0";
 		   	return nullptr;
+		} else if (readn == 0) {
+			return request;
+		} else {
+			total_read += readn;
 		}
 
-		result = parser->parseRequest(*request, data, nread);
+		result = parser->parseRequest(*request, data, total_read);
 		if (result > 0) {
 			break;
 		} else if (result == -1) {

@@ -17,6 +17,16 @@ int createTimerFd() {
 	return timerfd;
 }
 
+bool TimerManager::findFirstTimestamp(const Timestamp& now, Timestamp& timestamp) {
+	for (const auto& pair : timer_map_) {
+		if (now < pair.first) {
+			timestamp = pair.first;
+			return true;
+		}
+	}
+	return false;
+}
+
 void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval) {
 	Timer::Ptr timer = std::make_shared<Timer>(when, processer, coroutine, interval);
 	bool earliest_timer_changed = false;
@@ -39,7 +49,6 @@ void TimerManager::resetTimerFd(Timestamp when) {
 	bzero(&new_value, sizeof(new_value));
 
 	int64_t micro_seconds_diff = when.getMicroSecondsFromEpoch() - Timestamp::now().getMicroSecondsFromEpoch();
-	assert(micro_seconds_diff > 0);
 	struct timespec ts;
 	ts.tv_sec = static_cast<time_t>(micro_seconds_diff / Timestamp::kMicrosecondsPerSecond);
 	ts.tv_nsec = static_cast<long>(micro_seconds_diff % Timestamp::kMicrosecondsPerSecond * 1000);
@@ -73,15 +82,21 @@ void TimerManager::dealWithExpiredTimer() {
 		pair.second->getProcesser()->addTask(pair.second->getCoroutine());
 
 		if (pair.second->getInterval() > 0) {
-			addTimer(pair.first + pair.second->getInterval() * Timestamp::kMicrosecondsPerSecond,
-					std::make_shared<Coroutine>(pair.second->getCoroutine()->getCallback()),
-					pair.second->getProcesser(),
-					pair.second->getInterval());
+			Timestamp new_timestamp = pair.first + pair.second->getInterval() * Timestamp::kMicrosecondsPerSecond;
+			Timer::Ptr timer = std::make_shared<Timer>(new_timestamp, 
+								pair.second->getProcesser(), 
+								std::make_shared<Coroutine>(pair.second->getCoroutine()->getCallback()), 
+								pair.second->getInterval());
+			{
+				MutexGuard lock(mutex_);
+				timer_map_.insert({new_timestamp, timer});
+			}
 		}
 	}
 	
-	if (!timer_map_.empty()) {
-		resetTimerFd(timer_map_.begin()->first);
+	Timestamp timestamp;
+	if (findFirstTimestamp(Timestamp::now(), timestamp)) {
+		resetTimerFd(timestamp);
 	}
 }
 

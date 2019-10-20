@@ -64,7 +64,6 @@ void Scheduler::addTask(Coroutine::Func task, std::string name) {
 Processer* Scheduler::pickOneProcesser() {
 	MutexGuard lock(mutex_);
 	static size_t index = 0;
-	LOG_DEBUG << "index:" << index << ", work_processer size:" << work_processers_.size();
 
 	assert(index < work_processers_.size());
 	Processer* picked = work_processers_[index++];
