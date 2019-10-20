@@ -9,8 +9,6 @@
 
 namespace melon {
 
-
-//todo:
 const int kPollTimeMs = -10000;
 
 static int createEventFd() {

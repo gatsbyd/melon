@@ -65,7 +65,7 @@ void Coroutine::SwapOut() {
 	Coroutine* old_coroutine = GetCurrentCoroutine().get();
 	GetCurrentCoroutine() = GetMainCoroutine();
 
-	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+	LOG_DEBUG << "swap coroutine:" << old_coroutine->name() << " out";
 
 	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
@@ -82,7 +82,7 @@ void Coroutine::swapIn() {
 	Coroutine::Ptr old_coroutine = GetMainCoroutine();
 	GetCurrentCoroutine() = shared_from_this();
 
-	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in, " << "swap coroutine:" << old_coroutine->name() << " out";
+	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in";
 
 	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno

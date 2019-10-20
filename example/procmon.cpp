@@ -264,13 +264,13 @@ private:
 			rsp->setHeader("Content-Type", "text/html");		
 			string response;
 			appendResponse(response, "<html><head><title>%s</title>\n", procname_.c_str());
-			appendResponse(response, "<meta http-equiv=\"refresh\" content=\"%d\">\n", 3);
+			//appendResponse(response, "<meta http-equiv=\"refresh\" content=\"%d\">\n", 3);
 			response.append("</head><body>\n");
 			response.append("<p><table>");
 
 			appendTableRow(response, "Procname", procname_);
 			appendTableRow(response, "PID", pid_);
-			appendTableRow(response, "State", last_stat_data_.state);
+			appendTableRow(response, "State", getState(last_stat_data_.state));
 			appendTableRow(response, "User time (s)", last_stat_data_.utime / clock_tick_per_seconds_);
 			appendTableRow(response, "System time (s)", last_stat_data_.stime / clock_tick_per_seconds_);
 			appendTableRow(response, "VmSize (KiB)", last_stat_data_.vsizeKb);
@@ -341,7 +341,7 @@ private:
 	void appendTableRow(string& response, const char* name, string value) {
 		appendResponse(response, "<tr><td>%s</td><td>%s</td></tr>\n", name, value.c_str());
   	}
-public:
+
 	ssize_t readFile(string filename, string& content) {
 		FILE* fp = ::fopen(filename.c_str(), "r");
 		char buf[65535];
@@ -368,6 +368,22 @@ public:
 			name = stat.substr(lp + 1, rp - lp - 1);
 		}
 		return name;
+	}
+
+	static const char* getState(char state) {
+		switch (state)
+		{
+			case 'R':
+				return "Running";
+			case 'S':
+				return "Sleeping";
+			case 'D':
+				return "Disk sleep";
+			case 'Z':
+				return "Zombie";
+			default:
+				return "Unknown";
+		}
 	}
 
 	struct CpuTime {
