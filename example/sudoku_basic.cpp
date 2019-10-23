@@ -1,8 +1,10 @@
 #include "Address.h"
+#include "Buffer.h"
 #include "Log.h"
 #include "TcpServer.h"
 #include "Scheduler.h"
 
+#include <algorithm>
 #include <vector>
 #include <assert.h>
 #include <string.h>
@@ -23,7 +25,7 @@ struct Node
 
 const int kMaxNodes = 1 + 81*4 + 9*9*9*4;
 const int kRow = 100, kCol = 200, kBox = 300;
-const int kCells = 81;
+const size_t kCells = 81;
 const char kNoSolution[] = "NoSolution";
 
 class SudokuSolver
@@ -308,8 +310,61 @@ public:
 
 private:
 	void connectionHandler(TcpConnection::Ptr conn) {
-		//char buf[100];
-		//string request;
+		Buffer buffer;
+		ssize_t n;
+		while (( n = conn->read(&buffer)) > 0) {
+			size_t len = buffer.readableBytes();
+			while (len > kCells + 2) {
+				const char* crlf = buffer.findCRLF();
+				if (crlf) {
+					string request(buffer.peek(), crlf);
+					buffer.retrieveUntil(crlf);
+					len = buffer.readableBytes();
+
+					string id;
+					string puzzle;
+
+					if (!checkRequest(request, id, puzzle)) {
+						string bad_response = "Bad Request!\r\n";
+						conn->write(bad_response);
+						conn->shutdown();	//主动关闭，客户端收到FIN后应该close，服务端read到0后也close
+						break;
+					}
+					string response = solveSudoku(request);
+
+					if (id.empty()) {
+						conn->write(response + "\r\n");
+					} else {
+						conn->write(id + ":" + response + "\r\n");
+					}
+				} else if (len > 100) {
+					string bad_response = "Bad Request!\r\n";
+					conn->write(bad_response.c_str(), bad_response.size());
+					conn->shutdown();
+					break;
+				}
+			}	
+		}
+	}
+
+	bool checkRequest(const string& request_with_id, string& id, string& puzzle) {
+		id.clear();
+		puzzle.clear();
+		bool goodRequest = true;
+
+		string::const_iterator colon = find(request_with_id.begin(), request_with_id.end(), ':');
+		if (colon != request_with_id.end()) {
+			id.assign(request_with_id.begin(), colon);
+			puzzle.assign(colon + 1, request_with_id.end());
+		} else {
+			puzzle = request_with_id;
+		}
+
+		if (puzzle.size() != kCells) {
+			goodRequest = false;
+		}
+
+		return goodRequest;
 	}
 
 	Scheduler* scheduler_;
@@ -330,3 +385,4 @@ int main(int args, char* argv[]) {
 	scheduler.start();
 	return 0;
 }
+
