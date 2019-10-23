@@ -85,11 +85,21 @@ void Socket::setKeepAlive(bool on) {
 }
 
 ssize_t Socket::read(void *buf, size_t count) {
-	return ::read(fd_, buf, count);
+	ssize_t n = ::read(fd_, buf, count);
+	if (n < 0) {
+		int err = GetSocketError(fd_);
+		LOG_ERROR << "Socket::read() SO_ERROR = " << err << " " << strerror(err);
+	}
+	return n;
 }
 
 ssize_t Socket::write(const void *buf, size_t count) {
-	return ::write(fd_, buf, count);
+	ssize_t n = ::write(fd_, buf, count);
+	if (n < 0) {
+		int err = GetSocketError(fd_);
+		LOG_ERROR << "Socket::write() SO_ERROR = " << err << " " << strerror(err);
+	}
+	return n;
 }	
 
 void Socket::shutdownWrite() {
