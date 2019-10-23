@@ -102,36 +102,36 @@ void ConsoleAppender::append(const std::string& log) {
 	std::cout << log;
 }
 
-Buffer::Buffer(size_t total) 
+LogBuffer::LogBuffer(size_t total) 
 	:total_(total), available_(total), cur_(0) {
 	data_ = new char[total];
 }
 
-Buffer::~Buffer() {
+LogBuffer::~LogBuffer() {
 	delete[] data_;
 }
 
-size_t Buffer::available() const {
+size_t LogBuffer::available() const {
 	return available_;
 }
 
-void Buffer::clear() {
+void LogBuffer::clear() {
 	cur_ = 0;
 	available_ = total_;
 }
 
-void Buffer::append(const char* data, size_t len) {
+void LogBuffer::append(const char* data, size_t len) {
 	assert(available_ >= len);
 	memcpy(data_ + cur_, data, len);
 	cur_ += len;
 	available_ -= len;
 }
 
-const char* Buffer::data() const {
+const char* LogBuffer::data() const {
 	return data_;
 }
 
-size_t Buffer::length() const {
+size_t LogBuffer::length() const {
 	return cur_;
 }
 
@@ -143,7 +143,7 @@ AsyncFileAppender::AsyncFileAppender(std::string basename, time_t persist_period
 	cond_(mutex_) ,
 	countdown_latch_(1),
 	persit_thread_(std::bind(&AsyncFileAppender::threadFunc, this)),
-		cur_buffer_(new Buffer()) {
+		cur_buffer_(new LogBuffer()) {
 }
 
 AsyncFileAppender::~AsyncFileAppender() {
@@ -160,7 +160,7 @@ void AsyncFileAppender::append(const std::string& log) {
 	} else {
 		buffers_.push_back(std::move(cur_buffer_));
 
-		cur_buffer_.reset(new Buffer());
+		cur_buffer_.reset(new LogBuffer());
 		cur_buffer_->append(log.c_str(), log.size());
 		cond_.notify();
 	}
@@ -180,8 +180,8 @@ void AsyncFileAppender::stop() {
 }
 
 void AsyncFileAppender::threadFunc() {
-	std::unique_ptr<Buffer> buffer(new Buffer());
-	std::vector<std::unique_ptr<Buffer>> persist_buffers;
+	std::unique_ptr<LogBuffer> buffer(new LogBuffer());
+	std::vector<std::unique_ptr<LogBuffer>> persist_buffers;
 	LogFile log_file(basename_);
 
 	countdown_latch_.countDown();

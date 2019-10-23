@@ -4,6 +4,7 @@
 #include "Noncopyable.h"
 
 #include <memory>
+#include <sys/uio.h>
 
 namespace melon {
 

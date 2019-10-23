@@ -45,7 +45,7 @@ class SudokuSolver
         bool cols[kCells][10] = { {false} };
         bool boxes[kCells][10] = { {false} };
 
-        for (int i = 0; i < kCells; ++i) {
+        for (size_t i = 0; i < kCells; ++i) {
             int row = i / 9;
             int col = i % 9;
             int box = row/3*3 + col/3;
@@ -55,7 +55,7 @@ class SudokuSolver
             boxes[box][val] = true;
         }
 
-        for (int i = 0; i < kCells; ++i) {
+        for (size_t i = 0; i < kCells; ++i) {
             if (inout_[i] == 0) {
                 append_column(i);
             }
@@ -72,7 +72,7 @@ class SudokuSolver
             }
         }
 
-        for (int i = 0; i < kCells; ++i) {
+        for (size_t i = 0; i < kCells; ++i) {
             if (inout_[i] == 0) {
                 int row = i / 9;
                 int col = i % 9;
@@ -271,7 +271,7 @@ string solveSudoku(const string& puzzle)
 
   int board[kCells] = { 0 };
   bool valid = true;
-  for (int i = 0; i < kCells; ++i)
+  for (size_t i = 0; i < kCells; ++i)
   {
     board[i] = puzzle[i] - '0';
     valid = valid && (0 <= board[i] && board[i] <= 9);
@@ -284,7 +284,7 @@ string solveSudoku(const string& puzzle)
     {
       result.clear();
       result.resize(kCells);
-      for (int i = 0; i < kCells; ++i)
+      for (size_t i = 0; i < kCells; ++i)
       {
         result[i] = static_cast<char>(board[i] + '0');
       }
@@ -310,15 +310,18 @@ public:
 
 private:
 	void connectionHandler(TcpConnection::Ptr conn) {
+		LOG_INFO << "new connection from " << conn->peerAddr().toString();
 		Buffer buffer;
 		ssize_t n;
 		while (( n = conn->read(&buffer)) > 0) {
 			size_t len = buffer.readableBytes();
-			while (len > kCells + 2) {
+			LOG_INFO << "read " << len << " Bytes:" << buffer.peekAsString();
+			while (len >= kCells + 2) {
 				const char* crlf = buffer.findCRLF();
 				if (crlf) {
 					string request(buffer.peek(), crlf);
-					buffer.retrieveUntil(crlf);
+					LOG_INFO << "request:" << request;
+					buffer.retrieveUntil(crlf + 2);
 					len = buffer.readableBytes();
 
 					string id;
@@ -330,7 +333,7 @@ private:
 						conn->shutdown();	//主动关闭，客户端收到FIN后应该close，服务端read到0后也close
 						break;
 					}
-					string response = solveSudoku(request);
+					string response = solveSudoku(puzzle);
 
 					if (id.empty()) {
 						conn->write(response + "\r\n");
@@ -373,12 +376,23 @@ private:
 };
 
 int main(int args, char* argv[]) {
+	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+
+	/**
+	Buffer buf;
+	char request[] = "000000010400000000020000000000050407008000300001090000300400200050100000000806000\r\n";
+	buf.append(request, sizeof(request));
+	const char* crlf = buf.findCRLF();
+	if (crlf) {
+		LOG_INFO << "crlf is not null";
+	} else {
+		LOG_INFO << "crlf is null";
+	}
+	**/
 	int num_threads = 1;
 	if (args > 1) {
 		num_threads = atoi(argv[1]);
 	}
-	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
-	
 	Scheduler scheduler(num_threads);
 	SudokuServer sudoku_server(&scheduler, 5000);
 	sudoku_server.start();

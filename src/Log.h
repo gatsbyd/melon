@@ -66,10 +66,10 @@ public:
 
 static const size_t kLogBufferSize = 1024 * 1024 * 10;
 
-class Buffer : public Noncopyable {
+class LogBuffer : public Noncopyable {
 public:
-	Buffer(size_t total = kLogBufferSize);
-	~Buffer();
+	LogBuffer(size_t total = kLogBufferSize);
+	~LogBuffer();
 
 	void clear();
 	void append(const char* data, size_t len);
@@ -103,8 +103,8 @@ private:
 	Condition cond_;
 	CountDownLatch countdown_latch_;
 	Thread persit_thread_;
-	std::unique_ptr<Buffer> cur_buffer_;
-	std::vector<std::unique_ptr<Buffer>> buffers_;
+	std::unique_ptr<LogBuffer> cur_buffer_;
+	std::vector<std::unique_ptr<LogBuffer>> buffers_;
 };
 
 enum class LogLevel {
