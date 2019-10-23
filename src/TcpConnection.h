@@ -1,12 +1,11 @@
 #ifndef _MELON_TCP_CONNECTION_H_
 #define _MELON_TCP_CONNECTION_H_
 
-#include "Socket.h"
 #include "Address.h"
+#include "Buffer.h"
+#include "Socket.h"
 
 namespace melon {
-
-class Buffer;
 
 class TcpConnection {
 public:
@@ -15,10 +14,10 @@ public:
 
 	ssize_t read(void* buf, size_t count);
 	ssize_t readn(void* buf, size_t count);
-	ssize_t read(Buffer*);
+	ssize_t read(Buffer::Ptr);
 	ssize_t write(const void* buf, size_t count);
 	ssize_t writen(const void* buf, size_t count);
-	ssize_t write(Buffer*);
+	ssize_t write(Buffer::Ptr);
 	ssize_t write(const std::string& message);
 	void shutdown();
 

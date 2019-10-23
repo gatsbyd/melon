@@ -13,6 +13,7 @@ namespace melon {
 // refer to muduo by Shuo Chen
 class Buffer {
 public:
+	typedef std::shared_ptr<Buffer> Ptr;
 	static const size_t kCheapPrepend = 8;
 	static const size_t kInitialSize = 1024;
 	explicit Buffer(size_t initialSize = kInitialSize)

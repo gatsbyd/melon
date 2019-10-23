@@ -263,8 +263,7 @@ class SudokuSolver
 
 using namespace std;
 
-string solveSudoku(const string& puzzle)
-{
+string solveSudoku(const string& puzzle) {
   assert(puzzle.size() == kCells);
 
   string result = kNoSolution;
@@ -311,18 +310,18 @@ public:
 private:
 	void connectionHandler(TcpConnection::Ptr conn) {
 		LOG_INFO << "new connection from " << conn->peerAddr().toString();
-		Buffer buffer;
+		Buffer::Ptr buffer = std::make_shared<Buffer>();
 		ssize_t n;
-		while (( n = conn->read(&buffer)) > 0) {
-			size_t len = buffer.readableBytes();
-			LOG_INFO << "read " << len << " Bytes:" << buffer.peekAsString();
+		while (( n = conn->read(buffer)) > 0) {
+			size_t len = buffer->readableBytes();
+			LOG_INFO << "read " << len << " Bytes:" << buffer->peekAsString();
 			while (len >= kCells + 2) {
-				const char* crlf = buffer.findCRLF();
+				const char* crlf = buffer->findCRLF();
 				if (crlf) {
-					string request(buffer.peek(), crlf);
+					string request(buffer->peek(), crlf);
 					LOG_INFO << "request:" << request;
-					buffer.retrieveUntil(crlf + 2);
-					len = buffer.readableBytes();
+					buffer->retrieveUntil(crlf + 2);
+					len = buffer->readableBytes();
 
 					string id;
 					string puzzle;
@@ -378,17 +377,6 @@ private:
 int main(int args, char* argv[]) {
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
-	/**
-	Buffer buf;
-	char request[] = "000000010400000000020000000000050407008000300001090000300400200050100000000806000\r\n";
-	buf.append(request, sizeof(request));
-	const char* crlf = buf.findCRLF();
-	if (crlf) {
-		LOG_INFO << "crlf is not null";
-	} else {
-		LOG_INFO << "crlf is null";
-	}
-	**/
 	int num_threads = 1;
 	if (args > 1) {
 		num_threads = atoi(argv[1]);
