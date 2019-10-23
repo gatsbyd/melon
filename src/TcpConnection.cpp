@@ -1,3 +1,4 @@
+#include "Buffer.h"
 #include "TcpConnection.h"
 
 namespace melon {
@@ -25,6 +26,10 @@ ssize_t TcpConnection::readn(void* buf, size_t count) {
 	return count;
 }
 
+ssize_t TcpConnection::read(Buffer* buf) {
+	return buf->readSocket(conn_socket_);
+}
+
 ssize_t TcpConnection::write(const void* buf, size_t count) {
 	return conn_socket_->write(buf, count);
 }
@@ -45,6 +50,18 @@ ssize_t TcpConnection::writen(const void* buf, size_t count) {
 
 void TcpConnection::shutdown() {
 	conn_socket_->shutdownWrite();
+}
+
+ssize_t TcpConnection::write(Buffer* buf) {
+	ssize_t n = writen(buf->peek(), buf->readableBytes());
+	if (n > 0) {
+		buf->retrieve(n);
+	}
+	return n;
+}
+
+ssize_t TcpConnection::write(const std::string& message) {
+	return writen(message.data(), message.size());
 }
 
 }

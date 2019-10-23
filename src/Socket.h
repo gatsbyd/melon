@@ -31,7 +31,9 @@ public:
 	void setKeepAlive(bool on);
 
 	ssize_t read(void *buf, size_t count);
+	ssize_t readv(const struct iovec* iov, int iovcnt);
 	ssize_t write(const void *buf, size_t count);
+	ssize_t writev(const struct iovec *iov, int iovcnt);
 	void shutdownWrite();
 
 	void SetNonBlockAndCloseOnExec();

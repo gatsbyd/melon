@@ -93,6 +93,15 @@ ssize_t Socket::read(void *buf, size_t count) {
 	return n;
 }
 
+ssize_t Socket::readv(const struct iovec* iov, int iovcnt) {
+	ssize_t n = ::readv(fd_, iov, iovcnt);
+	if (n < 0) {
+		int err = GetSocketError(fd_);
+		LOG_ERROR << "Socket::readv() SO_ERROR = " << err << " " << strerror(err);
+	}
+	return n;
+}
+
 ssize_t Socket::write(const void *buf, size_t count) {
 	ssize_t n = ::write(fd_, buf, count);
 	if (n < 0) {
@@ -101,6 +110,15 @@ ssize_t Socket::write(const void *buf, size_t count) {
 	}
 	return n;
 }	
+
+ssize_t Socket::writev(const struct iovec *iov, int iovcnt) {
+	ssize_t n = ::write(fd_, iov, iovcnt);
+	if (n < 0) {
+		int err = GetSocketError(fd_);
+		LOG_ERROR << "Socket::writev() SO_ERROR = " << err << " " << strerror(err);
+	}
+	return n;
+}
 
 void Socket::shutdownWrite() {
 	if (::shutdown(fd_, SHUT_WR) < 0) {

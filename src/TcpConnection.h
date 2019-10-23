@@ -6,6 +6,8 @@
 
 namespace melon {
 
+class Buffer;
+
 class TcpConnection {
 public:
 	typedef std::shared_ptr<TcpConnection> Ptr;
@@ -13,8 +15,11 @@ public:
 
 	ssize_t read(void* buf, size_t count);
 	ssize_t readn(void* buf, size_t count);
+	ssize_t read(Buffer*);
 	ssize_t write(const void* buf, size_t count);
 	ssize_t writen(const void* buf, size_t count);
+	ssize_t write(Buffer*);
+	ssize_t write(const std::string& message);
 	void shutdown();
 
 	const IpAddress& peerAddr() const { return peer_addr_; }
