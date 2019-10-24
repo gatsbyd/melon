@@ -314,7 +314,6 @@ private:
 		ssize_t n;
 		while (( n = conn->read(buffer)) > 0) {
 			size_t len = buffer->readableBytes();
-			LOG_INFO << "read " << len << " Bytes:" << buffer->peekAsString();
 			while (len >= kCells + 2) {
 				const char* crlf = buffer->findCRLF();
 				if (crlf) {
@@ -339,6 +338,7 @@ private:
 					} else {
 						conn->write(id + ":" + response + "\r\n");
 					}
+
 				} else if (len > 100) {
 					string bad_response = "Bad Request!\r\n";
 					conn->write(bad_response.c_str(), bad_response.size());
@@ -375,6 +375,7 @@ private:
 };
 
 int main(int args, char* argv[]) {
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	int num_threads = 1;
