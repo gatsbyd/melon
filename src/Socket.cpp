@@ -13,11 +13,6 @@
 
 namespace melon {
 	
-Socket::~Socket() {
-	::close(fd_);
-	LOG_DEBUG << "close socket:" << fd_;
-}
-
 void Socket::bind(const IpAddress& local) {
 	if (::bind(fd_, local.getSockAddr(), sizeof(struct sockaddr_in)) < 0) {
 		LOG_FATAL << "bind: " << strerror(errno);
@@ -124,6 +119,10 @@ void Socket::shutdownWrite() {
 	if (::shutdown(fd_, SHUT_WR) < 0) {
 		LOG_ERROR << "shutdownWrite:" << strerror(errno);
 	}
+}
+
+void Socket::close() {
+	::close(fd_);
 }
 
 void Socket::SetNonBlockAndCloseOnExec() {

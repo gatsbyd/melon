@@ -20,6 +20,7 @@ public:
 	ssize_t write(Buffer::Ptr);
 	ssize_t write(const std::string& message);
 	void shutdown();
+	void close();
 
 	const IpAddress& peerAddr() const { return peer_addr_; }
 private:

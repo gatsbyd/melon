@@ -52,6 +52,10 @@ void TcpConnection::shutdown() {
 	conn_socket_->shutdownWrite();
 }
 
+void TcpConnection::close() {
+	conn_socket_->close();
+}
+
 ssize_t TcpConnection::write(Buffer::Ptr buf) {
 	ssize_t n = writen(buf->peek(), buf->readableBytes());
 	if (n > 0) {

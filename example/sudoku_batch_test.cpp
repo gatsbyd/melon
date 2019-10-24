@@ -12,6 +12,8 @@ using namespace std;
 using namespace melon;
 
 Scheduler* g_scheduler;
+int g_conn_num = 1;
+int g_finished;
 const int kCells = 81;
 
 typedef std::vector<string> Input;
@@ -30,15 +32,15 @@ InputPtr readInput(std::istream& in) {
 
 class SudokuClient {
 public:
-	SudokuClient(const char* input, IpAddress addr, int conn)
-			:server_addr_(addr),
-			conn_(conn) {
+	SudokuClient(const char* input, IpAddress addr)
+			:server_addr_(addr) {
 				ifstream in(input);
 				input_ = readInput(in);
-			}
+	}
+
 	void sudokuClient() {
 		TcpClient client(server_addr_);
-		for (int i = 0; i < conn_; ++i) {
+		for (int i = 0; i < g_conn_num; ++i) {
 			connections.push_back(client.connect());
 		}
 
@@ -50,6 +52,7 @@ public:
 			for (size_t i = 0; i < input_->size(); ++i) {
 				connection->write(std::to_string(i) + ":" + (*input_)[i] + "\r\n");
 			}
+			connection->shutdown();
 		}
 
 	}
@@ -62,33 +65,31 @@ public:
 				const char* crlf = buffer->findCRLF();
 
 				if (crlf) {
-					try {
-						string response (buffer->peek(), crlf);
-						buffer->retrieveUntil(crlf + 2);
-						len = buffer->readableBytes();
-						LOG_INFO << "response: " << response;
-					} catch (length_error err) {
-						LOG_ERROR << crlf - buffer->peek();
-						throw err;
-					}
+					string response (buffer->peek(), crlf);
+					buffer->retrieveUntil(crlf + 2);
+					len = buffer->readableBytes();
+					LOG_INFO << "response: " << response;
 				} else if (len > 100) {
-					LOG_INFO << "Bad Response";
+					LOG_ERROR << "Bad Response";
 					conn->shutdown();
+					break;
 				}
 			}
 		}
-		//conn->close();
+		++g_finished;
+		if (g_conn_num== g_finished) {
+			LOG_INFO << "all connection finished";
+		}
+		conn->close();
 	}
 private:
 	InputPtr input_;
 	IpAddress server_addr_;
-	int conn_;
 	vector<TcpConnection::Ptr> connections;
 };
 
 
 int main(int argc, char* argv[]) {
-	int conn = 1;
 	const char* input = nullptr;
 	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
@@ -100,12 +101,12 @@ int main(int argc, char* argv[]) {
 	input = argv[1];
 	IpAddress server_addr(argv[2], 5000);
 	if (argc > 3) {
-		conn = atoi(argv[3]);
+		g_conn_num = atoi(argv[3]);
 	}
 
 	Scheduler scheduler;
 	g_scheduler = &scheduler;
-	SudokuClient client(input, server_addr, conn);
+	SudokuClient client(input, server_addr);
 	scheduler.addTask(std::bind(&SudokuClient::sudokuClient, client));
 
 	scheduler.start();

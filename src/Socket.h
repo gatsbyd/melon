@@ -17,7 +17,6 @@ public:
 
 	explicit Socket(int fd) 
 		:fd_(fd) {}
-	~Socket();
 
 	void bind(const IpAddress& local);
 	void listen();
@@ -36,6 +35,7 @@ public:
 	ssize_t write(const void *buf, size_t count);
 	ssize_t writev(const struct iovec *iov, int iovcnt);
 	void shutdownWrite();
+	void close();
 
 	void SetNonBlockAndCloseOnExec();
 	static Socket::Ptr CreateTcp();
