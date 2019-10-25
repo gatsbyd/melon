@@ -7,6 +7,7 @@
 #include "Log.h"
 #include "Scheduler.h"
 #include "TcpClient.h"
+#include "Timestamp.h"
 
 using namespace std;
 using namespace melon;
@@ -14,13 +15,17 @@ using namespace melon;
 Scheduler* g_scheduler;
 int g_conn_num = 1;
 int g_finished;
+Timestamp g_start;
 const int kCells = 81;
 
 typedef std::vector<string> Input;
 typedef std::shared_ptr<Input> InputPtr;
 
 InputPtr readInput(std::istream& in) {
-	InputPtr input(new Input);
+	InputPtr input(new Input, [](Input* p) {
+						delete p;
+						LOG_INFO << "destroy input";
+					});
 	std::string line;
 	while (getline(in, line)) {
 		if (line.size() == static_cast<size_t>(kCells)) {
@@ -44,19 +49,21 @@ public:
 			connections.push_back(client.connect());
 		}
 
+		g_start = Timestamp::now();
 		for (const TcpConnection::Ptr& connection : connections) {
-			g_scheduler->addTask(std::bind(&SudokuClient::receiveResponse, this, connection));
+			g_scheduler->addTask(std::bind(&SudokuClient::handleConnection, this, connection));
 		}
-
-		for (const TcpConnection::Ptr& connection : connections) {
-			for (size_t i = 0; i < input_->size(); ++i) {
-				connection->write(std::to_string(i) + ":" + (*input_)[i] + "\r\n");
-			}
-			connection->shutdown();
-		}
-
 	}
-	void receiveResponse(TcpConnection::Ptr conn) {
+
+	void handleConnection(TcpConnection::Ptr conn) {
+		//send request
+		LOG_INFO << "start send request, input.use_count = " << input_.use_count();
+		for (size_t i = 0; i < input_->size(); ++i) {
+			conn->write(std::to_string(i) + ":" + (*input_)[i] + "\r\n");
+		}
+		conn->shutdown();
+		LOG_INFO << "send over request";
+		//receive response
 		ssize_t n;
 		Buffer::Ptr buffer = std::make_shared<Buffer>();
 		while ((n = conn->read(buffer)) > 0) {
@@ -77,10 +84,14 @@ public:
 			}
 		}
 		++g_finished;
-		if (g_conn_num== g_finished) {
-			LOG_INFO << "all connection finished";
-		}
 		conn->close();
+		if (g_conn_num== g_finished) {
+			int64_t elapsed = (Timestamp::now() - g_start) / Timestamp::kMicrosecondsPerSecond;
+			LOG_INFO << "all connection finished, total " << elapsed << " seconds, "
+					<< (elapsed / g_conn_num) << " seconds per client";
+			g_scheduler->stop();
+		}
+		LOG_INFO << "finish handleConnection";
 	}
 private:
 	InputPtr input_;
@@ -91,7 +102,7 @@ private:
 
 int main(int argc, char* argv[]) {
 	const char* input = nullptr;
-	Logger::setLogLevel(LogLevel::INFO);
+	//Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	if (argc < 3) {

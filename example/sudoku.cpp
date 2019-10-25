@@ -318,7 +318,7 @@ private:
 				const char* crlf = buffer->findCRLF();
 				if (crlf) {
 					string request(buffer->peek(), crlf);
-					LOG_INFO << "request:" << request;
+					LOG_INFO << "receive request: " << request;
 					buffer->retrieveUntil(crlf + 2);
 					len = buffer->readableBytes();
 
@@ -335,8 +335,10 @@ private:
 
 					if (id.empty()) {
 						conn->write(response + "\r\n");
+						LOG_INFO << "send response: " << response << "\r\n";
 					} else {
 						conn->write(id + ":" + response + "\r\n");
+						LOG_INFO << "send response: " << id + ":" + response + "\r\n";
 					}
 
 				} else if (len > 100) {
@@ -347,6 +349,7 @@ private:
 				}
 			}	
 		}
+		conn->close();
 	}
 
 	bool checkRequest(const string& request_with_id, string& id, string& puzzle) {
@@ -375,7 +378,7 @@ private:
 };
 
 int main(int args, char* argv[]) {
-	//Logger::setLogLevel(LogLevel::INFO);
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	int num_threads = 1;

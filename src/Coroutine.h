@@ -17,7 +17,7 @@ enum class CoroutineState {
 	TERMINATED,
 };
 
-const uint32_t kStackSize = 1024 * 1024;
+const uint32_t kStackSize = 1024 * 512;
 
 class Coroutine : public Noncopyable, public std::enable_shared_from_this<Coroutine> {
 public:
