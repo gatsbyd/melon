@@ -72,6 +72,7 @@ void Processer::run() {
 			load_--;
 		}
 	}
+	LOG_INFO << "quit Processer::run";
 }
 
 void Processer::addTask(Coroutine::Ptr coroutine) {

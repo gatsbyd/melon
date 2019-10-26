@@ -14,7 +14,7 @@ static thread_local uint64_t t_coroutine_id {0};
 Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 	:c_id_(++t_coroutine_id), 
 	name_(name + "-" + std::to_string(c_id_)),
-	cb_(std::move(cb)),
+	cb_(cb),
 	stack_size_(stack_size),
 	state_(CoroutineState::INIT) {
 	assert(stack_size > 0);

@@ -13,7 +13,7 @@ using namespace std;
 using namespace melon;
 
 Scheduler* g_scheduler;
-int g_conn_num = 1;
+//int g_conn_num = 1;
 int g_finished;
 Timestamp g_start;
 const int kCells = 81;
@@ -24,7 +24,7 @@ typedef std::shared_ptr<Input> InputPtr;
 InputPtr readInput(std::istream& in) {
 	InputPtr input(new Input, [](Input* p) {
 						delete p;
-						LOG_INFO << "destroy input";
+						LOG_INFO << "destroy InputPtr";
 					});
 	std::string line;
 	while (getline(in, line)) {
@@ -37,15 +37,18 @@ InputPtr readInput(std::istream& in) {
 
 class SudokuClient {
 public:
-	SudokuClient(const char* input, IpAddress addr)
-			:server_addr_(addr) {
+	SudokuClient(const char* input, IpAddress addr, int conn_num)
+			:server_addr_(addr), conn_num_(conn_num) {
 				ifstream in(input);
 				input_ = readInput(in);
+	}
+	~SudokuClient() {
+		LOG_INFO << "finish destroy SudokuClient";
 	}
 
 	void sudokuClient() {
 		TcpClient client(server_addr_);
-		for (int i = 0; i < g_conn_num; ++i) {
+		for (int i = 0; i < conn_num_; ++i) {
 			connections.push_back(client.connect());
 		}
 
@@ -57,7 +60,7 @@ public:
 
 	void handleConnection(TcpConnection::Ptr conn) {
 		//send request
-		LOG_INFO << "start send request, input.use_count = " << input_.use_count();
+		LOG_INFO << "start send request, conn_num_ = " << conn_num_;
 		for (size_t i = 0; i < input_->size(); ++i) {
 			conn->write(std::to_string(i) + ":" + (*input_)[i] + "\r\n");
 		}
@@ -85,24 +88,26 @@ public:
 		}
 		++g_finished;
 		conn->close();
-		if (g_conn_num== g_finished) {
+		if (conn_num_== g_finished) {
 			int64_t elapsed = (Timestamp::now() - g_start) / Timestamp::kMicrosecondsPerSecond;
 			LOG_INFO << "all connection finished, total " << elapsed << " seconds, "
-					<< (elapsed / g_conn_num) << " seconds per client";
+					<< (1.0 * elapsed / conn_num_) << " seconds per client";
 			g_scheduler->stop();
+			LOG_INFO << "stop scheduler";
 		}
 		LOG_INFO << "finish handleConnection";
 	}
 private:
 	InputPtr input_;
 	IpAddress server_addr_;
+	int conn_num_;
 	vector<TcpConnection::Ptr> connections;
 };
 
 
 int main(int argc, char* argv[]) {
 	const char* input = nullptr;
-	//Logger::setLogLevel(LogLevel::INFO);
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	if (argc < 3) {
@@ -111,16 +116,18 @@ int main(int argc, char* argv[]) {
 	}
 	input = argv[1];
 	IpAddress server_addr(argv[2], 5000);
+	int conn_num = 1;
 	if (argc > 3) {
-		g_conn_num = atoi(argv[3]);
+		conn_num = atoi(argv[3]);
 	}
 
 	Scheduler scheduler;
 	g_scheduler = &scheduler;
-	SudokuClient client(input, server_addr);
-	scheduler.addTask(std::bind(&SudokuClient::sudokuClient, client));
+	SudokuClient client(input, server_addr, conn_num);
+	scheduler.addTask(std::bind(&SudokuClient::sudokuClient, &client));
 
 	scheduler.start();
+	LOG_INFO << "leave main";
 
 	return 0;
 }

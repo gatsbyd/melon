@@ -28,7 +28,9 @@ Scheduler::Scheduler(size_t thread_number)
 }
 
 Scheduler::~Scheduler() {
+	LOG_INFO << "start destroy Scheduler";
 	stop();
+	LOG_INFO << "finish destroy Scheduler";
 }
 
 void Scheduler::start() {
@@ -38,6 +40,7 @@ void Scheduler::start() {
 						}
 					}, "timer");
 	main_processer_.run();
+	LOG_INFO << "leave Scheduler::start";
 }
 
 void Scheduler::stop() {
