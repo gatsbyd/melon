@@ -39,6 +39,9 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 Coroutine::Coroutine()
 	:c_id_(++t_coroutine_id),
 	name_("Main-" + std::to_string(c_id_)),
+	cb_(nullptr),
+	stack_size_(0),
+	stack_(nullptr),
 	state_(CoroutineState::INIT) {
 	
 	if (getcontext(&context_)) {
