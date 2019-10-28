@@ -16,6 +16,7 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 	name_(name + "-" + std::to_string(c_id_)),
 	cb_(cb),
 	stack_size_(stack_size),
+	stack_(nullptr),
 	state_(CoroutineState::INIT) {
 	assert(stack_size > 0);
 	
