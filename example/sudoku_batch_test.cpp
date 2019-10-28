@@ -22,10 +22,7 @@ typedef std::vector<string> Input;
 typedef std::shared_ptr<Input> InputPtr;
 
 InputPtr readInput(std::istream& in) {
-	InputPtr input(new Input, [](Input* p) {
-						delete p;
-						LOG_INFO << "destroy InputPtr";
-					});
+	InputPtr input(new Input);
 	std::string line;
 	while (getline(in, line)) {
 		if (line.size() == static_cast<size_t>(kCells)) {
@@ -41,9 +38,6 @@ public:
 			:server_addr_(addr), conn_num_(conn_num) {
 				ifstream in(input);
 				input_ = readInput(in);
-	}
-	~SudokuClient() {
-		LOG_INFO << "finish destroy SudokuClient";
 	}
 
 	void sudokuClient() {
@@ -93,7 +87,6 @@ public:
 			LOG_INFO << "all connection finished, total " << elapsed << " seconds, "
 					<< (1.0 * elapsed / conn_num_) << " seconds per client";
 			g_scheduler->stop();
-			LOG_INFO << "stop scheduler";
 		}
 		LOG_INFO << "finish handleConnection";
 	}
@@ -127,7 +120,6 @@ int main(int argc, char* argv[]) {
 	scheduler.addTask(std::bind(&SudokuClient::sudokuClient, &client));
 
 	scheduler.start();
-	LOG_INFO << "leave main";
 
 	return 0;
 }
