@@ -339,6 +339,8 @@ private:
 					} else {
 						conn->write(id + ":" + response + "\r\n");
 						LOG_INFO << "send response: " << id + ":" + response + "\r\n";
+					} else {
+						break;
 					}
 
 				} else if (len > 100) {

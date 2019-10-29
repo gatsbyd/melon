@@ -56,10 +56,11 @@ public:
 		//send request
 		LOG_INFO << "start send request, conn_num_ = " << conn_num_;
 		for (size_t i = 0; i < input_->size(); ++i) {
-			conn->write(std::to_string(i) + ":" + (*input_)[i] + "\r\n");
+			string request = std::to_string(i) + ":" + (*input_)[i] + "\r\n";
+			conn->write(request);
+			LOG_INFO << "send request:" << request;
 		}
 		conn->shutdown();
-		LOG_INFO << "send over request";
 		//receive response
 		ssize_t n;
 		Buffer::Ptr buffer = std::make_shared<Buffer>();
@@ -76,6 +77,8 @@ public:
 				} else if (len > 100) {
 					LOG_ERROR << "Bad Response";
 					conn->shutdown();
+					break;
+				} else {
 					break;
 				}
 			}
