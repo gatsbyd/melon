@@ -1,6 +1,8 @@
 #include "Address.h"
 #include "Log.h"
 #include "Scheduler.h"
+#include "TcpConnection.h"
+#include "TcpClient.h"
 
 #include <fstream>
 #include <iostream>
@@ -37,17 +39,67 @@ public:
 		server_addr_(addr),
 		conn_num_(conn_num),
 		pipelines_(pipelines),
-		no_delay_(no_delay)	{
+		no_delay_(no_delay),
+		count_(0) {
 
 	}
 
-	void handleClient();
+	void handleClient() {
+		TcpClient client(server_addr_);
+		for (int i = 0; i < conn_num_; ++i) {
+			connections_.push_back(client.connect());
+		}
+		for (const TcpConnection::Ptr& connection : connections_) {
+			g_scheduler->addTask(std::bind(&SudokuClient::handleConnection, this, connection));
+		}
+	}
+
+	void handleConnection(TcpConnection::Ptr conn) {
+		//先发送pipeline个请求
+		send(conn, pipelines_);
+		
+		ssize_t n = 0;
+		Buffer::Ptr buffer = std::make_shared<Buffer>();
+		while ((n = conn->read(buffer)) > 0) {
+           size_t len = buffer->readableBytes();
+           while (len > kCells + 2) {
+               const char* crlf = buffer->findCRLF();
+               if (crlf) {
+                   string response (buffer->peek(), crlf);
+                   buffer->retrieveUntil(crlf + 2);
+                   len = buffer->readableBytes();
+                   LOG_INFO << "response: " << response;
+
+					//接收到一个响应再发一个请求
+					send(conn, 1);
+               } else if (len > 100) {
+                   LOG_ERROR << "Bad Response";
+                   conn->shutdown();
+                   break;
+               } else {
+                   break;
+               }
+           }
+		}
+
+	}
+
+	void send(TcpConnection::Ptr conn, int n) {
+
+		for (int i = 0; i < n; ++i) {
+			const string& req = (*input_)[count_ % input_->size()];
+			conn->write(std::to_string(count_) + ":" + req);
+			++count_;
+		}
+	}
 private:
 	InputPtr input_;
 	IpAddress server_addr_;
 	int conn_num_;
 	int pipelines_;
 	int no_delay_;
+	int count_;
+	vector<TcpConnection::Ptr> connections_;
 
 };
 

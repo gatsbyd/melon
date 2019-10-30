@@ -48,14 +48,6 @@ ssize_t TcpConnection::writen(const void* buf, size_t count) {
 	return count;
 }
 
-void TcpConnection::shutdown() {
-	conn_socket_->shutdownWrite();
-}
-
-void TcpConnection::close() {
-	conn_socket_->close();
-}
-
 ssize_t TcpConnection::write(Buffer::Ptr buf) {
 	ssize_t n = writen(buf->peek(), buf->readableBytes());
 	if (n > 0) {
@@ -67,5 +59,14 @@ ssize_t TcpConnection::write(Buffer::Ptr buf) {
 ssize_t TcpConnection::write(const std::string& message) {
 	return writen(message.data(), message.size());
 }
+
+void TcpConnection::shutdown() {
+	conn_socket_->shutdownWrite();
+}
+
+void TcpConnection::close() {
+	conn_socket_->close();
+}
+
 
 }
