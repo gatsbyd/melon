@@ -9,7 +9,7 @@
 
 namespace melon {
 
-const int kPollTimeMs = -10000;
+const int kPollTimeMs = 1000;
 
 static int createEventFd() {
 	int event_fd = ::eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
