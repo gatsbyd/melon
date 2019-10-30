@@ -339,10 +339,7 @@ private:
 					} else {
 						conn->write(id + ":" + response + "\r\n");
 						LOG_INFO << "send response: " << id + ":" + response + "\r\n";
-					} else {
-						break;
 					}
-
 				} else if (len > 100) {
 					string bad_response = "Bad Request!\r\n";
 					conn->write(bad_response.c_str(), bad_response.size());
