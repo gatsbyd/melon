@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include <unordered_map>
 
 using namespace melon;
 using namespace std;
@@ -30,6 +31,45 @@ InputPtr readInput(std::istream& in) {
     return input;
 }
 
+class Percentile {
+public:
+	Percentile(std::vector<int>& latencies, int infly) {
+		stat << "recv " << latencies.size() << " in-fly " << infly;
+
+		if (!latencies.empty()) {
+			std::sort(latencies.begin(), latencies.end());
+			int min = latencies.front();
+			int max = latencies.back();
+			int sum = std::accumulate(latencies.begin(), latencies.end(), 0);
+			int mean = sum / static_cast<int>(latencies.size());
+			int median = getPercentile(latencies, 50);
+			int p90 = getPercentile(latencies, 90);
+			int p99 = getPercentile(latencies, 99);
+			stat << " min " << min
+				<< " max " << max
+				<< " avg " << mean
+				<< " median " << median
+				<< " p90 " << p90
+				<< " p99 " << p99;
+		}
+	}
+
+	string report() const {
+		return stat.str();
+	}
+
+private:
+	static int getPercentile(const vector<int>& latencies, int percent) {
+		assert(!latencies.empty());
+		size_t idx = 0;
+		if (percent > 0) {
+			idx = (latencies.size() * percent + 99) / 100 - 1;
+			assert(idx < latencies.size());
+		}
+		return latencies[idx];
+	}
+	ostringstream stat;
+};
 
 class SudokuClient {
 public:
@@ -41,7 +81,16 @@ public:
 		pipelines_(pipelines),
 		no_delay_(no_delay),
 		count_(0) {
+		g_scheduler->runEvery(1, std::make_shared<Coroutine>(std::bind(&SudokuClient::calculate, this)));
+	}
 
+	void calculate() {
+		vector<int> latencies;
+		latencies.insert(latencies.end(), latencies_.begin(), latencies_.end());
+		latencies_.clear();
+		int infly = static_cast<int>(send_time_.size());
+		Percentile p(latencies, infly);
+		LOG_INFO << p.report();
 	}
 
 	void handleClient() {
@@ -68,10 +117,15 @@ public:
                    string response (buffer->peek(), crlf);
                    buffer->retrieveUntil(crlf + 2);
                    len = buffer->readableBytes();
-                   LOG_INFO << "response: " << response;
+                   //LOG_INFO << "response: " << response;
 
-					//接收到一个响应再发一个请求
-					send(conn, 1);
+					//每接收到一个响应再发一个请求
+					Timestamp recv_time = Timestamp::now();
+					if (verify(response, recv_time)) {
+						send(conn, 1);
+					} else {
+
+					}
                } else if (len > 100) {
                    LOG_ERROR << "Bad Response";
                    conn->shutdown();
@@ -85,12 +139,29 @@ public:
 	}
 
 	void send(TcpConnection::Ptr conn, int n) {
-
+		Timestamp now = Timestamp::now();
 		for (int i = 0; i < n; ++i) {
 			const string& req = (*input_)[count_ % input_->size()];
-			conn->write(std::to_string(count_) + ":" + req);
+			conn->write(std::to_string(count_) + ":" + req + "\r\n");
+			send_time_[count_] = now;
 			++count_;
 		}
+	}
+
+	bool verify(const string& response, Timestamp recv_time) {
+		size_t colon = response.find(":");
+		if (colon != string::npos) {
+			int id = atoi(response.c_str());
+			auto sendtime = send_time_.find(id);
+			if (sendtime != send_time_.end()) {
+				int64_t latency_us = recv_time.getMicroSecondsFromEpoch() - sendtime->second.getMicroSecondsFromEpoch();	
+				latencies_.push_back(static_cast<int>(latency_us));
+				send_time_.erase(sendtime);
+			} else {
+				LOG_ERROR << "Unknown id " << id;
+			}
+		}
+		return true;
 	}
 private:
 	InputPtr input_;
@@ -100,7 +171,8 @@ private:
 	int no_delay_;
 	int count_;
 	vector<TcpConnection::Ptr> connections_;
-
+	unordered_map<int, Timestamp> send_time_;
+	vector<int> latencies_;
 };
 
 int main(int argc, char* argv[]) {

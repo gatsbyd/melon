@@ -348,6 +348,8 @@ private:
 					conn->write(bad_response.c_str(), bad_response.size());
 					conn->shutdown();
 					break;
+				} else {
+					break;
 				}
 			}	
 		}
