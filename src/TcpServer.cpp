@@ -14,6 +14,7 @@ TcpServer::TcpServer(const IpAddress& listen_addr, Scheduler* scheduler)
 	connection_handler_(defualtHandler) {
 
 	listen_socket_->SetNonBlockAndCloseOnExec();
+	listen_socket_->setReuseAddr(true);
 	listen_socket_->bind(listen_addr_);
 }
 
