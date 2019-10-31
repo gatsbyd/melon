@@ -40,7 +40,7 @@ public:
 			std::sort(latencies.begin(), latencies.end());
 			int min = latencies.front();
 			int max = latencies.back();
-			int sum = std::accumulate(latencies.begin(), latencies.end(), 0);
+			int64_t sum = std::accumulate(latencies.begin(), latencies.end(), static_cast<int64_t>(0));
 			int mean = sum / static_cast<int>(latencies.size());
 			int median = getPercentile(latencies, 50);
 			int p90 = getPercentile(latencies, 90);
