@@ -54,7 +54,7 @@ void Socket::setTcpNoDelay(bool on) {
 
 void Socket::setReuseAddr(bool on) {
 	int optval = on ? 1 : 0;
-	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_REUSEADDR, 
+	int ret = ::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
 		LOG_ERROR << "setsockopt: " << strerror(errno);
@@ -63,7 +63,7 @@ void Socket::setReuseAddr(bool on) {
 
 void Socket::setReusePort(bool on) {
 	int optval = on ? 1 : 0;
-	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_REUSEPORT, 
+	int ret = ::setsockopt(fd_, SOL_SOCKET, SO_REUSEPORT, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
 		LOG_ERROR << "setsockopt: " << strerror(errno);
@@ -72,7 +72,7 @@ void Socket::setReusePort(bool on) {
 
 void Socket::setKeepAlive(bool on) {
 	int optval = on ? 1 : 0;
-	int ret = ::setsockopt(fd_, IPPROTO_TCP, SO_KEEPALIVE, 
+	int ret = ::setsockopt(fd_, SOL_SOCKET, SO_KEEPALIVE, 
 					&optval, static_cast<socklen_t>(sizeof optval));
 	if (ret == -1) {
 		LOG_ERROR << "setsockopt: " << strerror(errno);
