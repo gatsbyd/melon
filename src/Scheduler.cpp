@@ -4,6 +4,16 @@
 #include "Scheduler.h"
 
 #include <assert.h>
+#include <signal.h>
+
+class IgnoreSigpipe {
+public:
+	IgnoreSigpipe() {
+		::signal(SIGPIPE, SIG_IGN);
+	}
+};
+
+IgnoreSigpipe signalObj;
 
 namespace melon {
 
