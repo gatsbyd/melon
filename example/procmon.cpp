@@ -296,6 +296,13 @@ private:
 		}
 
 		http_conn->sendResponse(rsp);
+
+		conn->shutdown();
+		Buffer::Ptr buffer = std::make_shared<Buffer>();
+		while (conn->read(buffer) > 0) {
+
+		}
+		conn->close();
 	}
 
 	void tick() {
