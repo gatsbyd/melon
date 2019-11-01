@@ -6,16 +6,21 @@ namespace melon {
 namespace rpc {
 
 void RpcServer::handleClient(TcpConnection::Ptr conn) {
-	//todo:read len
-	(void) conn;
+	Codec codec(conn);
+	//todo 错误处理
+	MessagePtr message = codec.receive();
+	::google::protobuf::Descriptor* descriptor = message->GetDescriptor();
+	HandlerMap::const_iterator it = handlers_.find(descriptor);
+
+	if (it != handlers_.end()) {
+		it->second(message);
+	} else {
+		//todo
+	}
+
+	
 
 }
-
-void RpcServer::registerService(::google::protobuf::Service* service) {
-	const ::google::protobuf::ServiceDescriptor* desc = service->GetDescriptor();
-	services_[desc->full_name()] = service;
-}
-
 
 }
 }
