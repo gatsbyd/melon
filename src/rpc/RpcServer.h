@@ -16,21 +16,25 @@ namespace rpc {
 class Callback {
 public:
 	virtual ~Callback() = default;
-	virtual void onMessage(const MessagePtr& message) = 0;
+	virtual MessagePtr onMessage(const MessagePtr& message) = 0;
 };
 
 template <typename T>
 class CallbackT : public Callback {
 public:
+	typedef std::function<MessagePtr (const std::shared_ptr<T>&)> ConcreteMessageCallback;
 	CallbackT(const ConcreteMessageCallback& callback)
 			:concrete_callback_(callback) {}
-	typedef std::function<void (const std::shared_ptr<T>&)> ConcreteMessageCallback;
-	void onMessage(const MessagePtr& message) {
+	MessagePtr onMessage(const MessagePtr& message) {
 		//todo 将message转T然后回调concrete_callback_
+		std::shared_ptr<T> concrete_message = std::static_pointer_cast<T>(message);
+		return concrete_callback_(concrete_message);
 	}
 private:
 	ConcreteMessageCallback concrete_callback_;
 };
+
+
 
 class RpcServer : public TcpServer {
 public:
@@ -41,10 +45,10 @@ public:
 
 	//todo
 	typedef std::function<void (MessagePtr)> RpcHandler;
-	typedef std::map<const ::google::protobuf::Descriptor*, RpcHandler> HandlerMap;
+	typedef std::map<const ::google::protobuf::Descriptor*, std::shared_ptr<Callback>> HandlerMap;
 
 	template<typename T>
-	void registerRpcHandler(const RpcHandler& handler) {
+	void registerRpcHandler(const CallbackT<T>::ConcreteMessageCallback& handler) {
 		//todo 线程安全
 		handlers_[T::descriptor()] = handler;
 	}

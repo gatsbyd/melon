@@ -12,14 +12,16 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 	::google::protobuf::Descriptor* descriptor = message->GetDescriptor();
 	HandlerMap::const_iterator it = handlers_.find(descriptor);
 
+	MessagePtr response;
 	if (it != handlers_.end()) {
-		it->second(message);
+	 response = it->second->onMessage(message);
 	} else {
 		//todo
 	}
-
-	
-
+	codec.send(response);
+	conn->shutdown();
+	//todo:读到0
+	conn->close();
 }
 
 }
