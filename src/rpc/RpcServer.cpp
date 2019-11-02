@@ -1,4 +1,5 @@
 #include "RpcServer.h"
+#include "log.h"
 
 #include <google/protobuf/descriptor.h>
 
@@ -17,10 +18,11 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 	 response = it->second->onMessage(message);
 	} else {
 		//todo
+		LOG_INFO << "unknown message";	
 	}
 	codec.send(response);
 	conn->shutdown();
-	//todo:读到0
+	conn->readUntilZero();
 	conn->close();
 }
 

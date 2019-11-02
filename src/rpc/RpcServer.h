@@ -3,6 +3,7 @@
 
 #include "Address.h"
 #include "Codec.h"
+#include "Mutex.h"
 #include "TcpServer.h"
 #include "TcpConnection.h"
 
@@ -26,7 +27,6 @@ public:
 	CallbackT(const ConcreteMessageCallback& callback)
 			:concrete_callback_(callback) {}
 	MessagePtr onMessage(const MessagePtr& message) {
-		//todo 将message转T然后回调concrete_callback_
 		std::shared_ptr<T> concrete_message = std::static_pointer_cast<T>(message);
 		return concrete_callback_(concrete_message);
 	}
@@ -44,13 +44,13 @@ public:
 }
 
 	//todo
-	typedef std::function<void (MessagePtr)> RpcHandler;
 	typedef std::map<const ::google::protobuf::Descriptor*, std::shared_ptr<Callback>> HandlerMap;
 
 	template<typename T>
 	void registerRpcHandler(const CallbackT<T>::ConcreteMessageCallback& handler) {
 		//todo 线程安全
-		handlers_[T::descriptor()] = handler;
+		std::shared_ptr<CallbackT<T> > cp(new CallbackT<T>(handler));
+		handlers_[T::descriptor()] = cp;
 	}
 
 private:

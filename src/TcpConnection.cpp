@@ -64,6 +64,14 @@ void TcpConnection::shutdown() {
 	conn_socket_->shutdownWrite();
 }
 
+void TcpConnection::readUntilZero() {
+	Buffer::Ptr buffer(new Buffer);
+	while (read(buffer) > 0) {
+		buffer->retrieveAll();
+	}
+	return;
+}
+
 void TcpConnection::close() {
 	conn_socket_->close();
 }
