@@ -92,7 +92,7 @@ void PollPoller::poll(int timeout) {
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
 		is_polling_ = false;
 		if (num == 0) {
-			LOG_INFO << "PollPoller::poll nothing happened";
+			LOG_DEBUG << "PollPoller::poll nothing happened";
 		} else if (num < 0) {
 			if (errno != EINTR) {
 				LOG_ERROR << "poll error, errno: " << errno << ", error str:" << strerror(errno);

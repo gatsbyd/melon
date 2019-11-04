@@ -379,8 +379,8 @@ private:
 };
 
 int main(int args, char* argv[]) {
-	Logger::setLogLevel(LogLevel::INFO);
-	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+//	Logger::setLogLevel(LogLevel::INFO);
+//	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	int num_threads = 1;
 	if (args > 1) {

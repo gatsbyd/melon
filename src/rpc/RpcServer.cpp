@@ -1,5 +1,5 @@
 #include "RpcServer.h"
-#include "log.h"
+#include "Log.h"
 
 #include <google/protobuf/descriptor.h>
 

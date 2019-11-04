@@ -7,14 +7,14 @@ namespace melon {
 namespace rpc {
 
 void ProtobufCodec::send(const MessagePtr& message) {
-	Buffer::Ptr buf;
+	Buffer::Ptr buf(new Buffer);
 
 	const std::string& typeName = message->GetTypeName();
 	int32_t nameLen = static_cast<int32_t>(typeName.size()+1);
 	buf->appendInt32(nameLen);
 	buf->append(typeName.c_str(), nameLen);
 
-	int byte_size = message->ByteSize();
+	int byte_size = message->ByteSizeLong();
 	buf->ensureWritableBytes(byte_size);
 
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf->beginWrite());
@@ -34,7 +34,7 @@ void ProtobufCodec::send(const MessagePtr& message) {
 }
 
 ProtobufCodec::ErrorCode ProtobufCodec::receive(MessagePtr& message) {
-	Buffer::Ptr buf;
+	Buffer::Ptr buf(new Buffer);
 	while (conn_->read(buf) > 0) {
 		if (buf->readableBytes() >= kHeaderlen + kMinMessageLen) {
 			const int32_t len = buf->peekInt32();

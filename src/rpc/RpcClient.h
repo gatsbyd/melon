@@ -32,11 +32,11 @@ void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& han
 							ProtobufCodec codec(conn);
 							codec.send(request);
 
-							Buffer::Ptr buf;
+							Buffer::Ptr buf(new Buffer);
 							MessagePtr response;
-							std::shared_ptr<T> concrete_response = std::static_pointer_cast<T>(response);
 							ProtobufCodec::ErrorCode errorcode = codec.receive(response);
 							if (errorcode == ProtobufCodec::kNoError && response) {
+								std::shared_ptr<T> concrete_response = std::static_pointer_cast<T>(response);
 								handler(concrete_response);
 							} else {
 								LOG_ERROR << "receive rpc response error:" << errorcode;
