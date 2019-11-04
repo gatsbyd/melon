@@ -77,21 +77,19 @@ public:
 		assert(readableBytes() > sizeof(int16_t));
 		int16_t x = 0;
 		::memcpy(&x, peek(), sizeof x);
-		return htobe16(x);
+		return be16toh(x);
 	}
 	int32_t peekInt32() const {
 		assert(readableBytes() > sizeof(int32_t));
 		int32_t x = 0;
 		::memcpy(&x, peek(), sizeof x);
-		return htobe32(x);
-		return x;
+		return be32toh(x);
 	}
 	int64_t peekInt64() const {
 		assert(readableBytes() > sizeof(int64_t));
 		int64_t x = 0;
 		::memcpy(&x, peek(), sizeof x);
-		return htobe64(x);
-		return x;
+		return be64toh(x);
 	}
 	std::string peekAsString() const {
 		std::string result(peek(), readableBytes());
@@ -103,6 +101,7 @@ public:
 		retrieveInt8();
 		return  result;
 	}
+
 	int16_t readInt16() {
 		int16_t result = peekInt16();
 		retrieveInt16();
@@ -131,6 +130,21 @@ public:
 	}
 	void append(const void* data, size_t len) {
 		append(static_cast<const char*>(data), len);
+	}
+	void appendInt8(int8_t x) {
+		append(&x, sizeof x);
+	}
+	void appendInt16(int16_t x) {
+		x = htobe16(x);
+		append(&x, sizeof x);
+	}
+	void appendInt32(int32_t x) {
+		x = htobe32(x);
+		append(&x, sizeof x);
+	}
+	void appendInt64(int64_t x) {
+		x = htobe64(x);
+		append(&x, sizeof x);
 	}
 	//preppand
 	void prepand(const void* data, size_t len) {
