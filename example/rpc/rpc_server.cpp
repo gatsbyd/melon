@@ -20,6 +20,7 @@ int main() {
 	Scheduler scheduler;
 	IpAddress addr(5000);
 	RpcServer server(addr, &scheduler);
+
 	server.registerRpcHandler<echo::EchoRequest>(onEcho);
 
 	server.start();

@@ -9,3 +9,7 @@ message EchoRequest {
 message EchoResponse {
     required string msg = 2;
 }
+
+message UnregisterRequest {
+	required int32 id = 3;
+}
