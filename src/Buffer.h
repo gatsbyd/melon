@@ -147,7 +147,7 @@ public:
 		append(&x, sizeof x);
 	}
 	//preppand
-	void prepand(const void* data, size_t len) {
+	void prepend(const void* data, size_t len) {
 		assert(len <= prependableBytes());
 		read_index_ -= len;
 		const char* d = static_cast<const char*>(data);

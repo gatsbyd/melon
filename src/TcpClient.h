@@ -1,5 +1,5 @@
-#ifndef _MELON_TCP_CLINET_H_
-#define _MELON_TCP_CLINET_H_
+#ifndef _MELON_TCP_CLIENT_T_
+#define _MELON_TCP_CLIENT_H_
 
 #include "TcpConnection.h"
 

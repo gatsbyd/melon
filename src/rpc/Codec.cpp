@@ -7,7 +7,30 @@ namespace melon {
 namespace rpc {
 
 void ProtobufCodec::send(const MessagePtr& message) {
-	(void)message;
+	Buffer::Ptr buf;
+
+	const std::string& typeName = message->GetTypeName();
+	int32_t nameLen = static_cast<int32_t>(typeName.size()+1);
+	buf->appendInt32(nameLen);
+	buf->append(typeName.c_str(), nameLen);
+
+	int byte_size = message->ByteSize();
+	buf->ensureWritableBytes(byte_size);
+
+	uint8_t* start = reinterpret_cast<uint8_t*>(buf->beginWrite());
+	message->SerializeWithCachedSizesToArray(start);
+	buf->hasWritten(byte_size);
+
+	int32_t checkSum = static_cast<int32_t>(
+			::adler32(1,
+					reinterpret_cast<const Bytef*>(buf->peek()),
+					static_cast<int>(buf->readableBytes())));
+	buf->appendInt32(checkSum);
+	assert(buf->readableBytes() == sizeof nameLen + nameLen + byte_size + sizeof checkSum);
+	int32_t len = htobe32(static_cast<int32_t>(buf->readableBytes()));
+	buf->prepend(&len, sizeof len);
+
+	conn_->write(buf);
 }
 
 ProtobufCodec::ErrorCode ProtobufCodec::receive(MessagePtr& message) {
@@ -17,13 +40,14 @@ ProtobufCodec::ErrorCode ProtobufCodec::receive(MessagePtr& message) {
 			const int32_t len = buf->peekInt32();
 			if (len > kMaxMessageLen || len < kMinMessageLen) {
 				return kInvalidLength;
-			} else if (buf->readableBytes() >= len + kHeaderlen) {
+			} else if (buf->readableBytes() >= static_cast<size_t>(len + kHeaderlen)) {
 				ErrorCode errorcode = kNoError;
 				message = parse(buf->peek() + kHeaderlen, len, &errorcode);
 				return errorcode;
 			}
 		}
 	}
+	return kServerClosed;
 }
 
 int32_t asInt32(const char* buf) {

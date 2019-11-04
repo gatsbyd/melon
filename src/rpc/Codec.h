@@ -19,6 +19,7 @@ public:
 		kInvalidNameLength,
 		kUnknownMessageType,
 		kParseError,
+		kServerClosed,
 	};
 	
 public:

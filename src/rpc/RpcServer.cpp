@@ -16,6 +16,7 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 		const ::google::protobuf::Descriptor* descriptor = message->GetDescriptor();
 		it = handlers_.find(descriptor);
 	} else {
+		LOG_ERROR << "receive rpc reqeust error: " << errorCode;
 		conn->shutdown();
 		conn->readUntilZero();
 		conn->close();
@@ -26,7 +27,7 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 		response = it->second->onMessage(message);
 		codec.send(response);
 	} else {
-		LOG_INFO << "Unknown message";	
+		LOG_ERROR << "Unknown message";	
 	}
 	conn->shutdown();
 	conn->readUntilZero();
