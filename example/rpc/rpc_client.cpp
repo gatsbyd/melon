@@ -12,9 +12,11 @@ int main(int argc, char* argv[]) {
 	}
 	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+
 	IpAddress server_addr(argv[1], 5000);
 	Scheduler scheduler;
 	RpcClient client(server_addr, &scheduler);
+
 	std::shared_ptr<echo::EchoRequest> request(new echo::EchoRequest);
 	request->set_msg("hello");
 

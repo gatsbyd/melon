@@ -12,9 +12,14 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 	MessagePtr message;
 	ProtobufCodec::ErrorCode errorCode = codec.receive(message);
 	HandlerMap::const_iterator it;
+	bool is_register = false;
 	if (errorCode == ProtobufCodec::kNoError && message) {
 		const ::google::protobuf::Descriptor* descriptor = message->GetDescriptor();
-		it = handlers_.find(descriptor);
+		{
+			MutexGuard lock(mutex_);
+			it = handlers_.find(descriptor);
+			is_register = it != handlers_.end();
+		}
 	} else {
 		LOG_ERROR << "receive rpc reqeust error: " << errorCode;
 		conn->shutdown();
@@ -23,7 +28,7 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 	}
 
 	MessagePtr response;
-	if (it != handlers_.end()) {
+	if (is_register) {
 		response = it->second->onMessage(message);
 		codec.send(response);
 	} else {

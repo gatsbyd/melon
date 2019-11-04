@@ -51,13 +51,17 @@ public:
 	void registerRpcHandler(const typename CallbackT<T>::ConcreteMessageCallback& handler) {
 		//todo 线程安全
 		std::shared_ptr<CallbackT<T> > cp(new CallbackT<T>(handler));
-		handlers_[T::descriptor()] = cp;
+		{
+			MutexGuard lock(mutex_);
+			handlers_[T::descriptor()] = cp;
+		}
 	}
 
 private:
 	void handleClient(TcpConnection::Ptr conn);
 
 	HandlerMap handlers_;
+	Mutex mutex_;
 };
 
 }
