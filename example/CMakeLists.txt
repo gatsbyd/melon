@@ -37,3 +37,5 @@ foreach(test_src ${test_srcs} )
         COMMAND ${test_name}
     )
 endforeach(test_src ${test_srcs})
+
+add_subdirectory(rpc)

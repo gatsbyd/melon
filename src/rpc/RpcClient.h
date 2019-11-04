@@ -22,8 +22,31 @@ public:
 		:client_(server_addr),
    		scheduler_(scheduler) {
 		}
-	template <typename T>
-	void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& handler);
+	//template <typename T>
+	//void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& handler);
+template <typename T>
+void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& handler) {
+	scheduler_->addTask([&]() {
+						TcpConnection::Ptr conn = client_.connect();
+						if (conn) {
+							ProtobufCodec codec(conn);
+							codec.send(request);
+
+							Buffer::Ptr buf;
+							MessagePtr response;
+							std::shared_ptr<T> concrete_response = std::static_pointer_cast<T>(response);
+							ProtobufCodec::ErrorCode errorcode = codec.receive(response);
+							if (errorcode == ProtobufCodec::kNoError && response) {
+								handler(concrete_response);
+							} else {
+								LOG_ERROR << "receive rpc response error:" << errorcode;
+							}
+
+							conn->readUntilZero();
+							conn->close();
+						}						
+					}, "rpc");	
+}
 
 private:
 	TcpClient client_;
