@@ -7,6 +7,7 @@
 #include "TcpServer.h"
 #include "TcpConnection.h"
 
+#include <assert.h>
 #include <map>
 #include <functional>
 #include <google/protobuf/service.h>
@@ -22,6 +23,7 @@ public:
 
 template <typename T>
 class CallbackT : public Callback {
+	static_assert(std::is_base_of<::google::protobuf::Message, T>::value, "T must be subclass of google::protobuf::Message");
 public:
 	typedef std::function<MessagePtr (const std::shared_ptr<T>&)> ConcreteMessageCallback;
 	CallbackT(const ConcreteMessageCallback& callback)
@@ -43,11 +45,10 @@ public:
 	setConnectionHandler(std::bind(&RpcServer::handleClient, this, std::placeholders::_1));
 }
 
-	//todo
 	typedef std::map<const ::google::protobuf::Descriptor*, std::shared_ptr<Callback>> HandlerMap;
 
 	template<typename T>
-	void registerRpcHandler(const CallbackT<T>::ConcreteMessageCallback& handler) {
+	void registerRpcHandler(const typename CallbackT<T>::ConcreteMessageCallback& handler) {
 		//todo 线程安全
 		std::shared_ptr<CallbackT<T> > cp(new CallbackT<T>(handler));
 		handlers_[T::descriptor()] = cp;
