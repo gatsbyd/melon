@@ -18,7 +18,7 @@ int main() {
 	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	Scheduler scheduler;
-	IpAddress addr("127.0.0.1", 5000);
+	IpAddress addr(5000);
 	RpcServer server(addr, &scheduler);
 	server.registerRpcHandler<echo::EchoRequest>(onEcho);
 
