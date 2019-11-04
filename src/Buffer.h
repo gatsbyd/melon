@@ -3,7 +3,9 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <endian.h>
 #include <stdio.h>
+#include <string.h>
 #include <vector>
 
 #include "Socket.h"
@@ -73,17 +75,22 @@ public:
 	}
 	int16_t peekInt16() const {
 		assert(readableBytes() > sizeof(int16_t));
-		int16_t x = *peek();
-		return x;
+		int16_t x = 0;
+		::memcpy(&x, peek(), sizeof x);
+		return htobe16(x);
 	}
 	int32_t peekInt32() const {
 		assert(readableBytes() > sizeof(int32_t));
-		int32_t x = *peek();
+		int32_t x = 0;
+		::memcpy(&x, peek(), sizeof x);
+		return htobe32(x);
 		return x;
 	}
 	int64_t peekInt64() const {
 		assert(readableBytes() > sizeof(int64_t));
-		int64_t x = *peek();
+		int64_t x = 0;
+		::memcpy(&x, peek(), sizeof x);
+		return htobe64(x);
 		return x;
 	}
 	std::string peekAsString() const {
