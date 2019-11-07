@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(ShinyVm CXX C)
+project(melon CXX C)
 
 set(CXX_FLAGS
  -g
