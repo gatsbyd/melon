@@ -25,6 +25,7 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 		conn->shutdown();
 		conn->readUntilZero();
 		conn->close();
+		return;
 	}
 
 	MessagePtr response;

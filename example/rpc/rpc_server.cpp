@@ -3,9 +3,11 @@
 #include "Log.h"
 
 #include "echo.pb.h"
+#include "args.pb.h"
 
 using namespace melon;
 using namespace melon::rpc;
+using namespace cherry;
 
 MessagePtr onEcho(std::shared_ptr<echo::EchoRequest> request) {
 	LOG_INFO << "server receive request, message:" << request->msg();
@@ -13,6 +15,16 @@ MessagePtr onEcho(std::shared_ptr<echo::EchoRequest> request) {
 	response->set_msg(request->msg());
 	return response;
 }
+
+
+MessagePtr onAppendEntry(std::shared_ptr<RequestAppendArgs> append_args) {
+	LOG_INFO << "new append rpc come: term=" << append_args->term() << "leader_id=" << append_args->leader_id()
+			<< "pre_log_index=" << append_args->pre_log_index() << "pre_log_term=" << append_args->pre_log_term()
+			<< "leader_commit=" << append_args->leader_commit();
+	std::shared_ptr<RequestAppendReply> append_reply(new RequestAppendReply);
+	return append_reply;
+}
+
 
 int main() {
 	Logger::setLogLevel(LogLevel::INFO);
@@ -22,6 +34,7 @@ int main() {
 	RpcServer server(addr, &scheduler);
 
 	server.registerRpcHandler<echo::EchoRequest>(onEcho);
+	server.registerRpcHandler<RequestAppendArgs>(onAppendEntry);
 
 	server.start();
 	scheduler.start();
