@@ -18,12 +18,23 @@ std::shared_ptr<RequestAppendArgs> constructAppendArgs() {
 	append_args->set_pre_log_term(1);
 	append_args->set_leader_commit(1);
 
+	//entries
 	LogEntry* entry = append_args->add_entries();
 	entry->set_term(1);
 	entry->set_index(1);
-	entry->set_command("command data");
-	assert(append_args->entries_size() == 1);
+	//cmd
+	std::string cmd_data;
+	KvCommnad cmd;
+	cmd.set_operation("GET");
+	cmd.set_key("key1");
+	cmd.set_value("value1");
+	cmd.set_cid(99);
+	cmd.set_seq(2);
+	cmd.SerializeToString(&cmd_data);
 
+	entry->set_command(cmd_data);
+
+	
 	return append_args;
 }
 
@@ -41,7 +52,7 @@ int main(int argc, char* argv[]) {
 	RpcClient client(server_addr, &scheduler);
 
 	client.Call<RequestAppendReply>(constructAppendArgs(), [](std::shared_ptr<RequestAppendReply> append_reply) {
-						LOG_INFO << "term=" << append_reply->term() << ", success=" << append_reply->success();
+						LOG_INFO << "append replay. term=" << append_reply->term() << ", success=" << append_reply->success();
 					});
 
 	/**

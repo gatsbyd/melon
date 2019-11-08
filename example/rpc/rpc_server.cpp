@@ -18,10 +18,23 @@ MessagePtr onEcho(std::shared_ptr<echo::EchoRequest> request) {
 
 
 MessagePtr onAppendEntry(std::shared_ptr<RequestAppendArgs> append_args) {
-	LOG_INFO << "new append rpc come: term=" << append_args->term() << "leader_id=" << append_args->leader_id()
-			<< "pre_log_index=" << append_args->pre_log_index() << "pre_log_term=" << append_args->pre_log_term()
-			<< "leader_commit=" << append_args->leader_commit();
+	LOG_INFO << "new append rpc come: term=" << append_args->term() << ", leader_id=" << append_args->leader_id()
+			<< ", pre_log_index=" << append_args->pre_log_index() << ", pre_log_term=" << append_args->pre_log_term()
+			<< ", leader_commit=" << append_args->leader_commit();
+
+	int log_size = append_args->entries_size();
+	for (int i = 0; i < log_size; ++i) {
+		const LogEntry& log_entry = append_args->entries(i);
+		KvCommnad cmd;
+		cmd.ParseFromString(log_entry.command());
+		LOG_INFO << "log entry: term=" << log_entry.term() << ", index=" << log_entry.index()
+				<< ", cmd.operation=" << cmd.operation() << ", cmd.key=" << cmd.key()
+				<< ", cmd.value=" << cmd.value() << ", cmd.cid=" << cmd.cid() << ", cmd.seq=" << cmd.seq();
+	}
+
 	std::shared_ptr<RequestAppendReply> append_reply(new RequestAppendReply);
+	append_reply->set_term(2);
+	append_reply->set_success(true);
 	return append_reply;
 }
 

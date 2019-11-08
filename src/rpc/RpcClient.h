@@ -24,30 +24,32 @@ public:
 		}
 
 	template <typename T>
-	void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& handler) {
-		scheduler_->addTask([&]() {
-						TcpConnection::Ptr conn = client_.connect();
-						if (conn) {
-							ProtobufCodec codec(conn);
-							codec.send(request);
+	inline void Call(MessagePtr request, const typename TypeTraits<T>::ResponseHandler& handler) {
+		scheduler_->addTask(std::bind(&RpcClient::handleConnection<T>, this, request, handler));
+	}
+private:
+	template <typename T>
+	void handleConnection(MessagePtr request, typename TypeTraits<T>::ResponseHandler handler) {
+		TcpConnection::Ptr conn = client_.connect();
+		if (conn) {
+			ProtobufCodec codec(conn);
+			codec.send(request);
 
-							Buffer::Ptr buf(new Buffer);
-							MessagePtr response;
-							ProtobufCodec::ErrorCode errorcode = codec.receive(response);
-							if (errorcode == ProtobufCodec::kNoError && response) {
-								std::shared_ptr<T> concrete_response = std::static_pointer_cast<T>(response);
-								handler(concrete_response);
-							} else {
-								LOG_ERROR << "receive rpc response error:" << errorcode;
-							}
+			Buffer::Ptr buf(new Buffer);
+			MessagePtr response;
+			ProtobufCodec::ErrorCode errorcode = codec.receive(response);
+			if (errorcode == ProtobufCodec::kNoError && response) {
+				std::shared_ptr<T> concrete_response = std::static_pointer_cast<T>(response);
+				handler(concrete_response);
+			} else {
+				LOG_ERROR << "receive rpc response error:" << errorcode;
+			}
 
-							conn->readUntilZero();
-							conn->close();
-						}						
-					}, "rpc");	
+			conn->readUntilZero();
+			conn->close();
+		}						
 	}
 
-private:
 	TcpClient client_;
 	Scheduler* scheduler_;
 };

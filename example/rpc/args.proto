@@ -34,3 +34,11 @@ message RequestAppendReply {
 	required bool success = 2;
 }
 
+message KvCommnad {
+	required string operation = 1;
+	required string key = 2;
+	required string value = 3;
+	required int64 cid = 4;
+	required uint32 seq = 5;
+}
+
