@@ -3,6 +3,7 @@
 
 #include "Codec.h"
 #include "Log.h"
+#include "Noncopyable.h"
 #include "Scheduler.h"
 #include "TcpClient.h"
 
@@ -16,8 +17,9 @@ public:
 	typedef std::function<void (std::shared_ptr<T>)> ResponseHandler;
 };
 
-class RpcClient {
+class RpcClient : public Noncopyable {
 public:
+	typedef std::shared_ptr<RpcClient> Ptr;
 	RpcClient(const IpAddress& server_addr, Scheduler* scheduler)
 		:client_(server_addr),
    		scheduler_(scheduler) {
