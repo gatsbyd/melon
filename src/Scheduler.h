@@ -35,11 +35,11 @@ private:
 	bool stop_ = false;
 	Processer main_processer_;
 	std::vector<Processer*> work_processers_;
-	std::vector<SchedulerThread::Ptr> threads_;
+	std::vector<ProcessThread::Ptr> threads_;
 
 	//单独一个线程处理定时任务
 	Processer* timer_processer_;
-	SchedulerThread::Ptr timer_thread_;
+	ProcessThread::Ptr timer_thread_;
 	std::unique_ptr<TimerManager> timer_manager_;
 
 	Mutex mutex_;

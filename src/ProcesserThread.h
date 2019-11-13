@@ -13,14 +13,14 @@ namespace melon {
 class Scheduler;
 class Processer;
 
-class SchedulerThread :public Noncopyable {
+class ProcessThread :public Noncopyable {
 public:
-	typedef std::shared_ptr<SchedulerThread> Ptr;
+	typedef std::shared_ptr<ProcessThread> Ptr;
 
-	SchedulerThread(Scheduler* scheduler);
-	~SchedulerThread();
+	ProcessThread(Scheduler* scheduler);
+	~ProcessThread();
 
-	Processer* startSchedule();
+	Processer* startProcess();
 	void join();
 
 private:

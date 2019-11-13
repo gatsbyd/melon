@@ -24,17 +24,17 @@ Scheduler::Scheduler(size_t thread_number)
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
 	for (size_t i = 0; i < thread_number - 1; ++i) {
-		threads_.push_back(std::make_shared<SchedulerThread>(this));
+		threads_.push_back(std::make_shared<ProcessThread>(this));
 	}
 
 	//work_processer
 	work_processers_.push_back(&main_processer_);
-	for (const SchedulerThread::Ptr& thread : threads_) {
-		work_processers_.push_back(thread->startSchedule());
+	for (const ProcessThread::Ptr& thread : threads_) {
+		work_processers_.push_back(thread->startProcess());
 	}
 
-	timer_thread_ = std::make_shared<SchedulerThread>(this);
-	timer_processer_ = timer_thread_->startSchedule();
+	timer_thread_ = std::make_shared<ProcessThread>(this);
+	timer_processer_ = timer_thread_->startProcess();
 }
 
 Scheduler::~Scheduler() {

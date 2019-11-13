@@ -6,8 +6,8 @@
 
 namespace melon {
 
-SchedulerThread::SchedulerThread(Scheduler* scheduler) 
-	:thread_(std::bind(&SchedulerThread::threadFunc, this)),
+ProcessThread::ProcessThread(Scheduler* scheduler) 
+	:thread_(std::bind(&ProcessThread::threadFunc, this)),
 	scheduler_(scheduler),
 	processer_(nullptr),
 	mutex_(),
@@ -15,10 +15,10 @@ SchedulerThread::SchedulerThread(Scheduler* scheduler)
 
 }
 
-SchedulerThread::~SchedulerThread() {
+ProcessThread::~ProcessThread() {
 }
 
-Processer* SchedulerThread::startSchedule() {
+Processer* ProcessThread::startProcess() {
 	thread_.start();
 
 	MutexGuard guard(mutex_);
@@ -29,11 +29,11 @@ Processer* SchedulerThread::startSchedule() {
 	return processer_;
 }
 
-void SchedulerThread::join() {
+void ProcessThread::join() {
 	thread_.join();
 }
 
-void SchedulerThread::threadFunc() {
+void ProcessThread::threadFunc() {
 	Processer processer(scheduler_);
 
 	{
