@@ -10,7 +10,6 @@ set(CXX_FLAGS
  -Werror
  -std=c++11
  -pthread
- -ldl
 )
 
 # ---[ Flags
