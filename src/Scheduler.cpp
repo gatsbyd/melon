@@ -90,6 +90,11 @@ void Scheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
 	timer_manager_->addTimer(when, coroutine, processer); //threa-save
 }
 
+void Scheduler::runAfter(uint64_t micro_delay, Coroutine::Ptr coroutine) {
+	Timestamp when = Timestamp::now() + micro_delay;
+	runAt(when, coroutine);
+}
+
 void Scheduler::runEvery(uint64_t interval, Coroutine::Ptr coroutine) {
 	Processer* processer = Processer::GetProcesserOfThisThread();
 	if (processer == nullptr) {
