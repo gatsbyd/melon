@@ -24,6 +24,7 @@ public:
 	~Scheduler();
 
 	void start();
+	void startAsync();
 	void stop();
 	void addTask(Coroutine::Func task, std::string name = "");
 	void runAt(Timestamp when, Coroutine::Ptr coroutine);
@@ -33,7 +34,8 @@ public:
 protected:
 	Processer* pickOneProcesser();
 private:
-	bool stop_ = false;
+	bool running_ = false;
+	size_t thread_num_;
 	Processer main_processer_;
 	std::vector<Processer*> work_processers_;
 	std::vector<ProcessThread::Ptr> threads_;
@@ -44,6 +46,7 @@ private:
 	std::unique_ptr<TimerManager> timer_manager_;
 
 	Mutex mutex_;
+	Condition cond;
 };
 
 }

@@ -18,12 +18,24 @@ IgnoreSigpipe signalObj;
 namespace melon {
 
 Scheduler::Scheduler(size_t thread_number)
-	:main_processer_(this),
-	timer_manager_(new TimerManager()) {
+	:thread_num_(thread_number),
+	main_processer_(this),
+	timer_manager_(new TimerManager()),
+	cond(mutex_) {
 	assert(thread_number > 0);
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
-	for (size_t i = 0; i < thread_number - 1; ++i) {
+}
+
+Scheduler::~Scheduler() {
+	stop();
+}
+
+void Scheduler::start() {
+	if (running_) {
+		return;
+	}
+	for (size_t i = 0; i < thread_num_ - 1; ++i) {
 		threads_.push_back(std::make_shared<ProcessThread>(this));
 	}
 
@@ -35,24 +47,38 @@ Scheduler::Scheduler(size_t thread_number)
 
 	timer_thread_ = std::make_shared<ProcessThread>(this);
 	timer_processer_ = timer_thread_->startProcess();
-}
-
-Scheduler::~Scheduler() {
-	stop();
-}
-
-void Scheduler::start() {
 	timer_processer_->addTask([&]() {
 						while (true) {
 							timer_manager_->dealWithExpiredTimer();
 						}
 					}, "timer");
+	{
+		MutexGuard lock(mutex_);
+		running_ = true;
+	}
+	cond.notify();
 	main_processer_.run();
 }
 
+void Scheduler::startAsync() {
+	if (running_) {
+		return;
+	}
+	Thread thread([&](){
+						start();
+					});
+	thread.start();
+	{
+		MutexGuard lock(mutex_);
+		while (running_) {
+			cond.wait();
+		}
+	}
+}
+
 void Scheduler::stop() {
-	if (stop_) return;
-	stop_ = true;
+	if (!running_) return;
+	running_ = false;
 
 	for (auto processer : work_processers_) {
 		processer->stop();
