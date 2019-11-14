@@ -35,8 +35,7 @@ struct Cmd {
 };
 
 void printUsage(char* app) {
-	printf("server side:%s -s port\n \
-			client size:%s -c ip port length number", app, app);
+	printf("server side:%s -s port\nclient size:%s -c ip port length number\n", app, app);
 }
 
 bool parseCmd(int argc, char* argv[], Cmd& cmd) {
@@ -145,7 +144,7 @@ void receive(TcpConnection::Ptr conn) {
 }
 
 int main(int argc, char* argv[]) {
-	Logger::setLogLevel(LogLevel::ERROR);
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	
 	Cmd cmd;
@@ -154,6 +153,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	Scheduler scheduler;
+	scheduler.startAsync();
 	if (cmd.client) {
 		IpAddress server_addr(cmd.ip, cmd.port);
 		TcpClient client(server_addr);
@@ -161,14 +161,13 @@ int main(int argc, char* argv[]) {
 							TcpConnection::Ptr conn = client.connect();
 							transmit(conn, cmd);
 						});
-		scheduler.start();
+		getchar();
 	} else if (cmd.server) {
 		IpAddress addr(cmd.port);
 		TcpServer server(addr, &scheduler);
 		server.setConnectionHandler(receive);
 		server.start();
-		scheduler.start();
+		getchar();
 	}
-
 	return 0;
 }

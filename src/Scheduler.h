@@ -45,6 +45,8 @@ private:
 	ProcessThread::Ptr timer_thread_;
 	std::unique_ptr<TimerManager> timer_manager_;
 
+	Thread thread_;
+
 	Mutex mutex_;
 	Condition cond;
 };

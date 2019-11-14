@@ -3,6 +3,7 @@
 #include "Scheduler.h"
 
 #include <unistd.h>
+#include <stdio.h>
 
 using namespace melon;
 
@@ -30,11 +31,11 @@ int main(int argc, char* argv[]) {
 
 	IpAddress server_addr(argv[1], atoi(argv[2]));
 	Scheduler scheduler;
+	scheduler.startAsync();
 
 	TcpClient client(server_addr);
 	scheduler.addTask(std::bind(echoCli, client));
 
-	scheduler.start();
-
+	getchar();
 	return 0;
 }

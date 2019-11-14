@@ -118,11 +118,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	Scheduler scheduler;
+	scheduler.startAsync();
 	g_scheduler = &scheduler;
 	SudokuClient client(input, server_addr, conn_num);
 	scheduler.addTask(std::bind(&SudokuClient::sudokuClient, &client));
 
-	scheduler.start();
-
+	getchar();
 	return 0;
 }

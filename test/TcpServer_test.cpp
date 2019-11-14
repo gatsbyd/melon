@@ -3,6 +3,7 @@
 #include "Scheduler.h"
 
 #include <unistd.h>
+#include <stdio.h>
 
 using namespace melon;
 
@@ -23,11 +24,12 @@ int main() {
 	IpAddress listen_addr(1234);
 
 	Scheduler scheduler(2);
+	scheduler.startAsync();
 	TcpServer server(listen_addr, &scheduler);
 	server.setConnectionHandler(handleClient);
 	server.start();
 
-	scheduler.start();
+	getchar();
 
 	return 0;
 }

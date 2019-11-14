@@ -21,6 +21,7 @@ Scheduler::Scheduler(size_t thread_number)
 	:thread_num_(thread_number),
 	main_processer_(this),
 	timer_manager_(new TimerManager()),
+	thread_(std::bind(&Scheduler::start, this)),
 	cond(mutex_) {
 	assert(thread_number > 0);
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
@@ -64,13 +65,10 @@ void Scheduler::startAsync() {
 	if (running_) {
 		return;
 	}
-	Thread thread([&](){
-						start();
-					});
-	thread.start();
+	thread_.start();
 	{
 		MutexGuard lock(mutex_);
-		while (running_) {
+		while (!running_) {
 			cond.wait();
 		}
 	}

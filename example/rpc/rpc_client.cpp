@@ -4,6 +4,7 @@
 #include "rpc/RpcClient.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <memory>
 
 using namespace melon;
@@ -49,6 +50,7 @@ int main(int argc, char* argv[]) {
 
 	IpAddress server_addr(argv[1], 5000);
 	Scheduler scheduler;
+	scheduler.startAsync();
 	RpcClient client(server_addr, &scheduler);
 
 	client.Call<RequestAppendReply>(constructAppendArgs(), [](std::shared_ptr<RequestAppendReply> append_reply) {
@@ -68,7 +70,6 @@ int main(int argc, char* argv[]) {
 					});
 	**/
 
-
-	scheduler.start();
+	getchar();
 	return 0;
 }

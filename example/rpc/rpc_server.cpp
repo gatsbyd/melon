@@ -5,6 +5,8 @@
 #include "echo.pb.h"
 #include "args.pb.h"
 
+#include <stdio.h>
+
 using namespace melon;
 using namespace melon::rpc;
 using namespace cherry;
@@ -43,6 +45,7 @@ int main() {
 	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	Scheduler scheduler;
+	scheduler.startAsync();
 	IpAddress addr(5000);
 	RpcServer server(addr, &scheduler);
 
@@ -50,6 +53,6 @@ int main() {
 	server.registerRpcHandler<RequestAppendArgs>(onAppendEntry);
 
 	server.start();
-	scheduler.start();
+	getchar();
 	return 0;
 }

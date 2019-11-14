@@ -204,11 +204,12 @@ int main(int argc, char* argv[]) {
 		InputPtr input(readInput(in));
 		Scheduler scheduler;
 		g_scheduler = &scheduler;
+		scheduler.startAsync();
 	
 		SudokuClient client(input, server_addr, conn_num, pipelines, nodelay);
 		scheduler.addTask(std::bind(&SudokuClient::handleClient, &client));
 
-		scheduler.start();
+		getchar();
 	} else {
 		printf("Cannot open %s\n", argv[1]);
 	}

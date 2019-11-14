@@ -431,8 +431,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	Scheduler scheduler;
+	scheduler.startAsync();
 	Procmon procmon(&scheduler, pid, port);
 	procmon.start();
-	scheduler.start();
+
+	getchar();
 	return 0;
 }
