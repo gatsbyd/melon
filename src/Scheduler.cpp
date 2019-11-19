@@ -106,26 +106,31 @@ Processer* Scheduler::pickOneProcesser() {
 	return picked;
 }
 
-void Scheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
+int64_t Scheduler::runAt(Timestamp when, Coroutine::Ptr coroutine) {
 	Processer* processer = Processer::GetProcesserOfThisThread();
 	if (processer == nullptr) {
 		processer = pickOneProcesser();
 	}
-	timer_manager_->addTimer(when, coroutine, processer); //threa-save
+	return timer_manager_->addTimer(when, coroutine, processer); //threa-save
 }
 
-void Scheduler::runAfter(uint64_t micro_delay, Coroutine::Ptr coroutine) {
+int64_t Scheduler::runAfter(uint64_t micro_delay, Coroutine::Ptr coroutine) {
 	Timestamp when = Timestamp::now() + micro_delay;
-	runAt(when, coroutine);
+	return runAt(when, coroutine);
 }
 
-void Scheduler::runEvery(uint64_t interval, Coroutine::Ptr coroutine) {
+int64_t Scheduler::runEvery(uint64_t micro_interval, Coroutine::Ptr coroutine) {
 	Processer* processer = Processer::GetProcesserOfThisThread();
 	if (processer == nullptr) {
 		processer = pickOneProcesser();
 	}
-	Timestamp when = Timestamp::now() + interval * Timestamp::kMicrosecondsPerSecond;
-	timer_manager_->addTimer(when, coroutine, processer, interval);
+	Timestamp when = Timestamp::now() + micro_interval;
+	return timer_manager_->addTimer(when, coroutine, processer, micro_interval);
+}
+
+
+void Scheduler::cancel(int64_t timer_id) {
+	timer_manager_->cancel(timer_id);
 }
 
 

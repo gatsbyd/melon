@@ -27,9 +27,10 @@ public:
 	void startAsync();
 	void stop();
 	void addTask(Coroutine::Func task, std::string name = "");
-	void runAt(Timestamp when, Coroutine::Ptr coroutine);
-	void runAfter(uint64_t micro_delay, Coroutine::Ptr coroutine);
-	void runEvery(uint64_t interval, Coroutine::Ptr coroutine);
+	int64_t runAt(Timestamp when, Coroutine::Ptr coroutine);
+	int64_t runAfter(uint64_t micro_delay, Coroutine::Ptr coroutine);
+	int64_t runEvery(uint64_t micro_interval, Coroutine::Ptr coroutine);
+	void cancel(int64_t);
 
 protected:
 	Processer* pickOneProcesser();

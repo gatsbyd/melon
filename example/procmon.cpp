@@ -249,7 +249,7 @@ public:
 
 	void start() {
 		tick();
-		scheduler_->runEvery(kPeriod_, std::make_shared<Coroutine>(std::bind(&Procmon::tick, this)));
+		scheduler_->runEvery(kPeriod_ * Timestamp::kMicrosecondsPerSecond, std::make_shared<Coroutine>(std::bind(&Procmon::tick, this)));
 		server_.start();
 	}
 

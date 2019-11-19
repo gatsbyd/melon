@@ -7,6 +7,8 @@
 
 namespace melon {
 
+std::atomic<int64_t> Timer::s_sequence_creator_;
+
 int createTimerFd() {
 	int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 
@@ -27,7 +29,7 @@ bool TimerManager::findFirstTimestamp(const Timestamp& now, Timestamp& timestamp
 	return false;
 }
 
-void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval) {
+int64_t TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer* processer, uint64_t interval) {
 	Timer::Ptr timer = std::make_shared<Timer>(when, processer, coroutine, interval);
 	bool earliest_timer_changed = false;
 	{
@@ -37,9 +39,24 @@ void TimerManager::addTimer(Timestamp when, Coroutine::Ptr coroutine, Processer*
 			earliest_timer_changed = true;
 		}
 		timer_map_.insert({when, timer});
+		sequence_2_timestamp_.insert({timer->getSequence(), when});
 
 		if (earliest_timer_changed) {
 			resetTimerFd(when);	
+		}
+	}
+	return timer->getSequence();
+}
+
+void TimerManager::cancel(int64_t timer_id) {
+	{
+		MutexGuard lock(mutex_);
+		auto it = sequence_2_timestamp_.find(timer_id);
+		if (it != sequence_2_timestamp_.end()) {
+			timer_map_.erase(it->second);
+			sequence_2_timestamp_.erase(it);
+		} else {
+			cancel_set_.insert(timer_id);
 		}
 	}
 }
@@ -73,25 +90,42 @@ void TimerManager::dealWithExpiredTimer() {
 	readTimerFd();
 
 	std::vector<std::pair<Timestamp, Timer::Ptr>> expired;
-	auto it_not_less_now = timer_map_.lower_bound(Timestamp::now());
-	std::copy(timer_map_.begin(), it_not_less_now, back_inserter(expired));
-	timer_map_.erase(timer_map_.begin(), it_not_less_now);
+	{
+		MutexGuard lock(mutex_);
+		auto it_not_less_now = timer_map_.lower_bound(Timestamp::now());
+		std::copy(timer_map_.begin(), it_not_less_now, back_inserter(expired));
+		timer_map_.erase(timer_map_.begin(), it_not_less_now);
+		for (auto& pair : expired) {
+			sequence_2_timestamp_.erase(pair.second->getSequence());
+		}
+	}
 
 	for (const std::pair<Timestamp, Timer::Ptr>& pair : expired) {
-		assert(pair.second->getProcesser() != nullptr);
-		pair.second->getProcesser()->addTask(pair.second->getCoroutine());
-
-		if (pair.second->getInterval() > 0) {
-			Timestamp new_timestamp = pair.first + pair.second->getInterval() * Timestamp::kMicrosecondsPerSecond;
-			Timer::Ptr timer = std::make_shared<Timer>(new_timestamp, 
-								pair.second->getProcesser(), 
-								std::make_shared<Coroutine>(pair.second->getCoroutine()->getCallback()), 
-								pair.second->getInterval());
-			{
-				MutexGuard lock(mutex_);
-				timer_map_.insert({new_timestamp, timer});
+		Timer::Ptr old_timer = pair.second;
+		{
+			MutexGuard lock(mutex_);
+			if (cancel_set_.find(old_timer->getSequence()) != cancel_set_.end()) {
+				continue;
 			}
 		}
+
+		assert(old_timer->getProcesser() != nullptr);
+		old_timer->getProcesser()->addTask(old_timer->getCoroutine());
+
+		if (old_timer->getInterval() > 0) {
+			Timestamp new_timestamp = Timestamp::now() + old_timer->getInterval();
+			old_timer->setTimestamp(new_timestamp);
+			old_timer->setCoroutine(std::make_shared<Coroutine>(old_timer->getCoroutine()->getCallback()));
+			{
+				MutexGuard lock(mutex_);
+				timer_map_.insert({new_timestamp, old_timer});
+				sequence_2_timestamp_[old_timer->getSequence()] = new_timestamp;
+			}
+		}
+	}
+	{
+		MutexGuard lock(mutex_);
+		cancel_set_.clear();
 	}
 	
 	Timestamp timestamp;

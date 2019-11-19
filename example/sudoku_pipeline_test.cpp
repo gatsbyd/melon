@@ -81,7 +81,7 @@ public:
 		pipelines_(pipelines),
 		no_delay_(no_delay),
 		count_(0) {
-		g_scheduler->runEvery(1, std::make_shared<Coroutine>(std::bind(&SudokuClient::calculate, this)));
+		g_scheduler->runEvery(1 * Timestamp::kMicrosecondsPerSecond, std::make_shared<Coroutine>(std::bind(&SudokuClient::calculate, this)));
 	}
 
 	void calculate() {
