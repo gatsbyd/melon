@@ -78,6 +78,7 @@ void Scheduler::stop() {
 	if (!running_) return;
 	running_ = false;
 	if (thread_.isStarted()) {
+		main_processer_.stop();
 		thread_.join();
 	}
 
