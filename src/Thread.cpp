@@ -36,6 +36,10 @@ Thread::~Thread() {
 	}
 }
 
+bool Thread::isStarted() {
+	return started_;
+}
+
 void Thread::start() {
 	assert(!started_);
 	started_ = true;

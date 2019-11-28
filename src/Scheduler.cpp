@@ -77,6 +77,9 @@ void Scheduler::startAsync() {
 void Scheduler::stop() {
 	if (!running_) return;
 	running_ = false;
+	if (thread_.isStarted()) {
+		thread_.join();
+	}
 
 	for (auto processer : work_processers_) {
 		processer->stop();

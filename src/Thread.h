@@ -12,6 +12,7 @@ public:
 	Thread(Func cb, std::string name = "");
 	~Thread();
 
+	bool isStarted();
 	void start();
 	void join();
 	const std::string& getName() const;
