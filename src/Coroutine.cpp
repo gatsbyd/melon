@@ -1,8 +1,8 @@
 #include "Coroutine.h"
+#include "Processer.h"
 #include "Log.h"
 
 #include <assert.h>
-#include <atomic>
 #include <error.h>
 #include <signal.h>
 #include <string.h>
@@ -124,6 +124,20 @@ Coroutine::Ptr Coroutine::GetMainCoroutine() {
 
 std::string Coroutine::name() {
 	return name_;
+}
+	
+void CoroutineCondition::wait() {
+	assert(Coroutine::GetCurrentCoroutine());
+	while (!notifyed_) {
+		Processer* processer = Processer::GetProcesserOfThisThread();
+		processer->addTask(Coroutine::GetCurrentCoroutine());
+		Coroutine::SwapOut();			
+	}
+	notifyed_ = false;
+}
+
+void CoroutineCondition::notify() {
+	notifyed_ = true;
 }
 
 }

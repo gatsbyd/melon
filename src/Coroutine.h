@@ -56,6 +56,14 @@ private:
 	CoroutineState state_;
 };
 
+class CoroutineCondition {
+public:
+	void wait();
+	void notify();
+private:
+	bool notifyed_ = false;
+};
+
 }
 
 #endif
