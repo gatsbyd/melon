@@ -14,7 +14,7 @@ public:
 	~Condition();
 
 	void wait();
-	void wait_seconds(time_t seconds);
+	bool wait_seconds(time_t seconds);
 	void notify();
 	void notifyAll();
 	

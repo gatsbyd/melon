@@ -26,6 +26,8 @@ Scheduler::Scheduler(size_t thread_number)
 	assert(thread_number > 0);
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
+	//work_processer
+	work_processers_.push_back(&main_processer_);
 }
 
 Scheduler::~Scheduler() {
@@ -41,7 +43,6 @@ void Scheduler::start() {
 	}
 
 	//work_processer
-	work_processers_.push_back(&main_processer_);
 	for (const ProcessThread::Ptr& thread : threads_) {
 		work_processers_.push_back(thread->startProcess());
 	}

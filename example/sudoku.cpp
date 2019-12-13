@@ -388,10 +388,12 @@ int main(int args, char* argv[]) {
 		num_threads = atoi(argv[1]);
 	}
 	Scheduler scheduler(num_threads);
-	scheduler.startAsync();
+	//scheduler.startAsync();
 	SudokuServer sudoku_server(&scheduler, 5000);
 	sudoku_server.start();
-	getchar();
+
+	scheduler.start();
+	//getchar();
 	return 0;
 }
 
