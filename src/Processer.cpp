@@ -66,7 +66,6 @@ void Processer::run() {
 				}
 			}
 		}
-		cur->setState(CoroutineState::RUNNABLE);
 		cur->swapIn();
 		if (cur->getState() == CoroutineState::TERMINATED) {
 			load_--;
@@ -77,9 +76,7 @@ void Processer::run() {
 void Processer::addTask(Coroutine::Ptr coroutine) {
 	MutexGuard guard(mutex_);
 	coroutines_.push_back(coroutine);
-	if (coroutine->getState() == CoroutineState::INIT) {
-		load_++;
-	}
+	load_++;
 
 	if (poller_.isPolling()) {
 		wakeupPollCoroutine();

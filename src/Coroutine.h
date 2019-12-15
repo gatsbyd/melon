@@ -11,10 +11,9 @@
 namespace melon {
 
 enum class CoroutineState {
-	INIT,
-	RUNNABLE,
-	BLOCKED,
-	TERMINATED,
+	RUNNABLE,		//可运行，包括初始化，从poll()中返回，从wait()从返回
+	BLOCKED,		//等待poll中, 暂时没用
+	TERMINATED,		//运行结束
 };
 
 const uint32_t kStackSize = 1024 * 512;
@@ -56,12 +55,16 @@ private:
 	CoroutineState state_;
 };
 
+class Processer;
+
+//TODO:暂时先用着吧
 class CoroutineCondition {
 public:
 	void wait();
 	void notify();
 private:
-	bool notifyed_ = false;
+	Processer* processer_;
+	Coroutine::Ptr coroutine_;
 };
 
 }

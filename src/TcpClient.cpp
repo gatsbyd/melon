@@ -31,7 +31,7 @@ retry:
 					|| errno == ENETUNREACH) {		//retry
 			retry_delay_ms_ = std::min(retry_delay_ms_ * 2, kMaxRetryDelayMs);
 			sleep(retry_delay_ms_);
-			LOG_DEBUG << "TcpClient::connect to " << server_addr_ << " retry";
+			LOG_DEBUG << "TcpClient::connect to " << server_addr_.toString() << " retry";
 			goto retry;
 		} else {	// failed
 			LOG_ERROR << "connect error in TcpClinet::connect, " << strerror(errno) << ", hooked=" << isHookEnabled();

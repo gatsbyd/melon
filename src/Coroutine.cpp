@@ -17,7 +17,7 @@ Coroutine::Coroutine(Func cb, std::string name, uint32_t stack_size)
 	cb_(cb),
 	stack_size_(stack_size),
 	stack_(nullptr),
-	state_(CoroutineState::INIT) {
+	state_(CoroutineState::RUNNABLE) {
 	assert(stack_size > 0);
 	
 	stack_ = malloc(stack_size_);
@@ -42,7 +42,7 @@ Coroutine::Coroutine()
 	cb_(nullptr),
 	stack_size_(0),
 	stack_(nullptr),
-	state_(CoroutineState::INIT) {
+	state_(CoroutineState::RUNNABLE) {
 	
 	if (getcontext(&context_)) {
 		LOG_ERROR << "getcontext: errno=" << errno
@@ -121,17 +121,16 @@ std::string Coroutine::name() {
 }
 	
 void CoroutineCondition::wait() {
+	//注意Process.cpp中我的策略是每执行一个Coroutine就将其从队列中移除
+	//Coroutine队列中没有队列时才执行Poll协程
 	assert(Coroutine::GetCurrentCoroutine());
-	while (!notifyed_) {
-		Processer* processer = Processer::GetProcesserOfThisThread();
-		processer->addTask(Coroutine::GetCurrentCoroutine());
-		Coroutine::SwapOut();			
-	}
-	notifyed_ = false;
+	processer_ = Processer::GetProcesserOfThisThread();
+	coroutine_ = Coroutine::GetCurrentCoroutine();
+	Coroutine::SwapOut();			
 }
 
 void CoroutineCondition::notify() {
-	notifyed_ = true;
+	processer_->addTask(coroutine_);
 }
 
 }
