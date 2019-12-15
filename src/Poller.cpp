@@ -51,13 +51,10 @@ void PollPoller::updateEvent(int fd, int events, Coroutine::Ptr coroutine) {
 		fd_to_coroutine_[fd] = coroutine;
 
 		std::string coroutine_name = coroutine->name();
-		LOG_DEBUG << "register:<" << fd << ", " << eventToString(events) << ", " << coroutine_name  << ">";
 	} else {
 		size_t index = it->second;
 		assert(index < pollfds_.size());
 		struct pollfd& pfd = pollfds_[index];
-		
-		LOG_DEBUG << "update:<" << fd << ", " << eventToString(pfd.events) << ", " << fd_to_coroutine_[fd]->name() << "> to " << "<" << fd << ", " << eventToString(events) << ", " <<  coroutine->name() << ">";
 
 		pfd.events = events;
 		pfd.revents = kNoneEvent;
@@ -70,7 +67,6 @@ void PollPoller::removeEvent(int fd) {
 	if (it == fd_to_index_.end()) {
 		return;
 	}
-	LOG_DEBUG << "unregister fd " << fd << " from poller";
 	size_t index = it->second;
 
 	fd_to_index_.erase(fd);
@@ -92,7 +88,6 @@ void PollPoller::poll(int timeout) {
 		int num = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
 		is_polling_ = false;
 		if (num == 0) {
-			LOG_DEBUG << "PollPoller::poll nothing happened";
 		} else if (num < 0) {
 			if (errno != EINTR) {
 				LOG_ERROR << "poll error, errno: " << errno << ", error str:" << strerror(errno);

@@ -74,7 +74,6 @@ void TimerManager::resetTimerFd(Timestamp when) {
 	if (timerfd_settime(timer_fd_, 0, &new_value, nullptr)) {
 		LOG_ERROR << "timerfd_settime:" << strerror(errno);
 	}
-	LOG_DEBUG << "reset timerfd at " << when;
 }
 
 ssize_t TimerManager::readTimerFd() {

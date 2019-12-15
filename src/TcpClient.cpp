@@ -23,7 +23,6 @@ retry:
 
 		int ret = sock->connect(server_addr_);
 		if (ret == 0) {
-			LOG_DEBUG << "connect success";
 			return std::make_shared<TcpConnection>(sock, server_addr_);
 		} else if (errno == EAGAIN 
 					|| errno == EADDRINUSE 

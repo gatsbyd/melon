@@ -51,7 +51,6 @@ Coroutine::Coroutine()
 }
 
 Coroutine::~Coroutine() {
-	LOG_DEBUG << "destroy coroutine:" << name_;
 	if (stack_) {
 		free(stack_);
 	}
@@ -69,8 +68,6 @@ void Coroutine::SwapOut() {
 	Coroutine* old_coroutine = GetCurrentCoroutine().get();
 	GetCurrentCoroutine() = GetMainCoroutine();
 
-	LOG_DEBUG << "swap coroutine:" << old_coroutine->name() << " out";
-
 	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
 				<< " error string:" << strerror(errno);
@@ -80,13 +77,10 @@ void Coroutine::SwapOut() {
 //挂起主协程，执行当前协程，只能在主协程调用
 void Coroutine::swapIn() {
 	if (state_ == CoroutineState::TERMINATED) {
-		LOG_DEBUG << "resume a terminated coroutine " << c_id_;
 		return;
 	}
 	Coroutine::Ptr old_coroutine = GetMainCoroutine();
 	GetCurrentCoroutine() = shared_from_this();
-
-	LOG_DEBUG << "swap coroutine:" << GetCurrentCoroutine()->name()  << " in";
 
 	if (swapcontext(&(old_coroutine->context_), &(GetCurrentCoroutine()->context_))) {
 		LOG_ERROR << "swapcontext: errno=" << errno
