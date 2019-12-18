@@ -36,6 +36,8 @@ public:
 protected:
 	Processer* pickOneProcesser();
 private:
+	void joinThread();
+private:
 	bool running_ = false;
 	size_t thread_num_;
 	Processer main_processer_;
@@ -52,6 +54,9 @@ private:
 	Mutex mutex_;
 	Condition cond_;
 	Condition quit_cond_;
+
+	//for stop
+	Thread join_thread_;
 };
 
 }

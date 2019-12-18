@@ -1,7 +1,9 @@
+#include "Log.h"
+
 #include <assert.h>
 #include <atomic>
-#include "Log.h"
 #include <sys/syscall.h>
+#include <string.h>
 #include <Thread.h>
 #include <unistd.h>
 
@@ -43,9 +45,9 @@ bool Thread::isStarted() {
 void Thread::start() {
 	assert(!started_);
 	started_ = true;
-	if (pthread_create(&tid_, nullptr, Thread::threadFuncInternal, this)) {
+	if (int error = pthread_create(&tid_, nullptr, Thread::threadFuncInternal, this)) {
 		started_ = false;	
-		LOG_FATAL << "pthread_create failed";	
+		LOG_FATAL << "pthread_create failed, " << strerror(error);	
 	}
 }
 
@@ -53,9 +55,9 @@ void Thread::join() {
 	assert(started_);
 	assert(!joined_);
 	joined_ = true;
-	if (pthread_join(tid_, nullptr)) {
+	if (int error = pthread_join(tid_, nullptr)) {
 		joined_ = false;
-		LOG_FATAL << "pthread_join failed";	
+		LOG_FATAL << "pthread_join failed, " << strerror(error);	
 	}
 }
 

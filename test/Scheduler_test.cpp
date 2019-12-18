@@ -12,6 +12,7 @@ void foo() {
 }
 
 int main() {
+	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 	Scheduler scheduler(3);
 	g_scheduler = &scheduler;
 	scheduler.startAsync();

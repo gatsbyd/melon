@@ -1,5 +1,6 @@
 #include "Processer.h"
 #include "Log.h"
+#include "Hook.h"
 #include "TimerManager.h"
 #include "Scheduler.h"
 
@@ -23,11 +24,12 @@ Scheduler::Scheduler(size_t thread_number)
 	timer_manager_(new TimerManager()),
 	thread_(std::bind(&Scheduler::start, this)),
 	cond_(mutex_),
-	quit_cond_(mutex_) {
+	quit_cond_(mutex_),
+	join_thread_(std::bind(&Scheduler::joinThread, this)) {
 	assert(thread_number > 0);
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
-	//work_processer
+	//main_processer
 	work_processers_.push_back(&main_processer_);
 }
 
@@ -51,6 +53,7 @@ void Scheduler::start() {
 
 	//timer_thread
 	timer_thread_ = std::make_shared<ProcessThread>(this);
+	//timer_processer
 	timer_processer_ = timer_thread_->startProcess();
 	timer_processer_->addTask([&]() {
 						while (true) {
@@ -87,20 +90,33 @@ void Scheduler::stop() {
 		return;
 	running_ = false;
 	
-	//
-	if (thread_.isStarted()) {
-		main_processer_.stop();
-		thread_.join();
-	}
+	//main_processer
+	main_processer_.stop();
 
+	//work_processer
 	for (auto processer : work_processers_) {
 		processer->stop();
+	}
+
+	//timer_processer
+	timer_processer_->stop();
+
+	//如果stop在scheduler线程中调用,在新建的线程中join
+	if (melon::isHookEnabled()) {
+		join_thread_.start();
+	} else {
+		joinThread();
+	}
+}
+
+void Scheduler::joinThread() {
+	if (thread_.isStarted()) {
+		thread_.join();
 	}
 
 	for (auto thread : threads_) {
 		thread->join();
 	}
-	timer_processer_->stop();
 	timer_thread_->join();
 	quit_cond_.notify();
 }
