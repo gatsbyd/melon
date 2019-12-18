@@ -22,7 +22,8 @@ Scheduler::Scheduler(size_t thread_number)
 	main_processer_(this),
 	timer_manager_(new TimerManager()),
 	thread_(std::bind(&Scheduler::start, this)),
-	cond(mutex_) {
+	cond_(mutex_),
+	quit_cond_(mutex_) {
 	assert(thread_number > 0);
 	assert(Processer::GetProcesserOfThisThread() == nullptr);
 
@@ -38,6 +39,7 @@ void Scheduler::start() {
 	if (running_) {
 		return;
 	}
+	//work_thread
 	for (size_t i = 0; i < thread_num_ - 1; ++i) {
 		threads_.push_back(std::make_shared<ProcessThread>(this));
 	}
@@ -47,6 +49,7 @@ void Scheduler::start() {
 		work_processers_.push_back(thread->startProcess());
 	}
 
+	//timer_thread
 	timer_thread_ = std::make_shared<ProcessThread>(this);
 	timer_processer_ = timer_thread_->startProcess();
 	timer_processer_->addTask([&]() {
@@ -58,7 +61,7 @@ void Scheduler::start() {
 		MutexGuard lock(mutex_);
 		running_ = true;
 	}
-	cond.notify();
+	cond_.notify();
 	main_processer_.run();
 }
 
@@ -70,14 +73,21 @@ void Scheduler::startAsync() {
 	{
 		MutexGuard lock(mutex_);
 		while (!running_) {
-			cond.wait();
+			cond_.wait();
 		}
 	}
 }
 
+void Scheduler::wait() {
+	quit_cond_.wait();
+}
+
 void Scheduler::stop() {
-	if (!running_) return;
+	if (!running_) 
+		return;
 	running_ = false;
+	
+	//
 	if (thread_.isStarted()) {
 		main_processer_.stop();
 		thread_.join();
@@ -86,11 +96,13 @@ void Scheduler::stop() {
 	for (auto processer : work_processers_) {
 		processer->stop();
 	}
+
 	for (auto thread : threads_) {
 		thread->join();
 	}
 	timer_processer_->stop();
 	timer_thread_->join();
+	quit_cond_.notify();
 }
 
 void Scheduler::addTask(Coroutine::Func task, std::string name) {

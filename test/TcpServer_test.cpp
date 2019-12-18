@@ -8,28 +8,33 @@
 using namespace melon;
 
 void handleClient(TcpConnection::Ptr conn){
-	LOG_INFO << "new connection, peer addr:" << conn->peerAddr().toString();
-	char buffer[500];
-	int n;
-	while ((n = conn->read(buffer, sizeof buffer)) > 0) {
-		conn->write(buffer, n);
+	conn->setTcpNoDelay(true);
+	Buffer::Ptr buffer = std::make_shared<Buffer>();
+	while (conn->read(buffer) > 0) {
+		conn->write(buffer);
 	}
-	LOG_DEBUG << "close echo connection";
+
+	conn->close();
 }
 
 
-int main() {
+int main(int args, char* argv[]) {
+	if (args < 2) {
+		printf("Usage: %s threads\n", argv[0]);
+		return 0;
+	}
+	Logger::setLogLevel(LogLevel::INFO);
 	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
-	IpAddress listen_addr(1234);
+	IpAddress listen_addr(5000);
+	int threads_num = std::atoi(argv[1]);
 
-	Scheduler scheduler(2);
+	Scheduler scheduler(threads_num);
 	scheduler.startAsync();
 	TcpServer server(listen_addr, &scheduler);
 	server.setConnectionHandler(handleClient);
 	server.start();
 
-	getchar();
-
+	scheduler.wait();
 	return 0;
 }

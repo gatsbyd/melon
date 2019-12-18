@@ -76,5 +76,8 @@ void TcpConnection::close() {
 	conn_socket_->close();
 }
 
+void TcpConnection::setTcpNoDelay(bool on) {
+	conn_socket_->setTcpNoDelay(on);
+}
 
 }

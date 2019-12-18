@@ -3,18 +3,22 @@
 
 using namespace melon;
 
-void bar() {
-	LOG_INFO << "start bar";
-	LOG_INFO << "leave bar";
-}
+Scheduler* g_scheduler;
 
 void foo() {
-	LOG_INFO << "start foo";
+	std::cout << "in foo()" << std::endl;
+	g_scheduler->stop();
+	std::cout << "leave foo" << std::endl;
 }
 
 int main() {
-	Logger::setLogLevel(LogLevel::INFO);
+	Scheduler scheduler(3);
+	g_scheduler = &scheduler;
+	scheduler.startAsync();
 
+	scheduler.addTask(foo);
+	
+	scheduler.wait();
 	return 0;
 }
 

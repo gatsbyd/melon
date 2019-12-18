@@ -25,6 +25,7 @@ public:
 
 	void start();
 	void startAsync();
+	void wait();
 	void stop();
 	void addTask(Coroutine::Func task, std::string name = "");
 	int64_t runAt(Timestamp when, Coroutine::Ptr coroutine);
@@ -49,7 +50,8 @@ private:
 	Thread thread_;
 
 	Mutex mutex_;
-	Condition cond;
+	Condition cond_;
+	Condition quit_cond_;
 };
 
 }

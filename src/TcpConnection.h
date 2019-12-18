@@ -22,6 +22,7 @@ public:
 	void shutdown();
 	void readUntilZero();
 	void close();
+	void setTcpNoDelay(bool on);
 
 	const IpAddress& peerAddr() const { return peer_addr_; }
 private:
