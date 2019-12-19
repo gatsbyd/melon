@@ -139,9 +139,8 @@ void Session::handleConnection() {
 	owner_->onDisconnect();
 }
 
-
 int main(int argc, char* argv[]) {
-	if (argc < 4) {
+	if (argc != 7) {
 		printf("Usage:%s serverip port threads blockSize sessionCount timeout\n", argv[0]);
 		return 0;
 	}

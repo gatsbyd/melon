@@ -64,7 +64,8 @@ retry:
 		n = origin_func(fd, std::forward<Args>(args)...);
 	} while (n == -1 && errno == EINTR);
 
-	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+	//TODO:WSL有bug, 所以需要|| errno == EINVAL，正式版本要去掉
+	if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINVAL)) {
 
 		//注册事件，事件到来后，将当前上下文作为一个新的协程进行调度
 		processer->updateEvent(fd, event, melon::Coroutine::GetCurrentCoroutine());

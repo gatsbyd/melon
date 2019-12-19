@@ -19,7 +19,7 @@ void handleClient(TcpConnection::Ptr conn){
 
 
 int main(int args, char* argv[]) {
-	if (args < 2) {
+	if (args != 2) {
 		printf("Usage: %s threads\n", argv[0]);
 		return 0;
 	}

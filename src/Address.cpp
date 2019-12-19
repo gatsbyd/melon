@@ -11,7 +11,7 @@ IpAddress::IpAddress(std::string ip, in_port_t port) {
 	bzero(&addr_, sizeof addr_);
 
 	addr_.sin_family = AF_INET;
-	addr_.sin_port = ::htons(port);
+	addr_.sin_port = htons(port);
 	int s;
 	if ((s = ::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)) {
 		if (s == 0) {
@@ -26,7 +26,7 @@ IpAddress::IpAddress(in_port_t port) {
 	bzero(&addr_, sizeof addr_);
 	
 	addr_.sin_family = AF_INET;
-	addr_.sin_port = ::htons(port);
+	addr_.sin_port = htons(port);
 	addr_.sin_addr.s_addr = ::htonl(INADDR_ANY);
 
 }
@@ -46,7 +46,7 @@ std::string IpAddress::toString() const {
 	} else {
 		ss << "invalid ip";
 	}
-	ss << ":" << ::ntohs(addr_.sin_port);
+	ss << ":" << ntohs(addr_.sin_port);
 	return ss.str();
 }
 

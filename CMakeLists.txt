@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(melon CXX C)
 
 set(CXX_FLAGS
+ -O2
  -g
  -pg
  -Wall
