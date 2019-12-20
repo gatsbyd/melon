@@ -133,7 +133,7 @@ https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%8D%8F%E7%A8%8B_%E
 
 #### 原理
 ucontext系列函数：
-1.`int getcontext(ucontext_t *ucp)`： 将此刻的上下文保存到ucp指向的结构中。
+1. `int getcontext(ucontext_t *ucp)`： 将此刻的上下文保存到ucp指向的结构中。
 2. `int setcontext(const ucontext_t *ucp)`： 调用成功后不会返回，执行流转移到ucp指向的上下文。
 3. `void makecontext(ucontext_t *ucp, void (*func)(), int argc, ...)`：重新设置ucp指向的上下文为func函数起始处。ucp结构由getcontext()获取。后续以ucp为参数调用setcontext()或者swapcontext()执行流将转到func函数。
 4. `int swapcontext(ucontext_t *oucp, const ucontext_t *ucp)`：保存当前上下文到oucp，并激活ucp指向的上下文。
