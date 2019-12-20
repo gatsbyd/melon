@@ -93,7 +93,7 @@ asio的测试代码在/src/tests/performance目录下的client.cpp和server.cpp�
 这是个典型的生产者-消费者问题。产生日志的线程将日志先存到缓冲区，日志消费线程将缓冲区中的日志写到磁盘。要保证两个线程的临界区尽可能小。
 
 #### 总体结构如下
-[日志结构](
+![日志结构](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E6%97%A5%E5%BF%97_%E7%BB%93%E6%9E%84%E5%9B%BE.png)
 
 每条LOG_DEBUG等语句对应创建一个匿名LogWrapper对象，同时搜集日志信息保存到LogEvent对象中，匿名对象创建完毕就会调用析构函数，在LogWrapper析构函数中将LogEvent送到Logger中，Logger再送往不同的目的地，比如控制台，文件等。
@@ -103,18 +103,18 @@ AsyncFileAppend对外提供append方法，前端Logger只需要调用这个方�
 
 前端和后端都维护一个缓冲区。
 第一种情况：前端写日志较慢，三秒内还没写满一个缓冲区。后端线程会被唤醒，进入临界区，在临界区内交换两个buffer的指针，出临界区后前端cur指向的缓冲区又是空的了，后端buffer指向的缓冲区为刚才搜集了日志的缓冲区，后端线程随后将buffer指向的缓冲区中的日志写到磁盘中。临界区内只交换两个指针，所以临界区很小。
-[情况1](
+![情况1](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E6%97%A5%E5%BF%97_%E6%83%85%E5%86%B51.png)
 
 
 第二种情况：前端写日志较快，三秒内已经写满了一个缓冲区。比如两秒的时候已经写满了第一个缓冲区，那么将cur指针保存到一个向量buffers_中，然后开辟一块新的缓冲区，另cur指向这块新缓冲区。然后唤醒后端消费线程，后端线程进入临界区，将cur和后端buffer_指针进行交换，将前端buffers_向量和后端persist_buffers_向量进行swap(对于std::vector也是指针交换)。出了临界区后，前端的cur始终指向一块干净的缓冲区，前端的向量buffers_也始终为空，后端的persist_buffers_向量中始终保存着有日志的缓冲区的指针。临界区同样很小仅仅是几个指针交换。
-[情况2](
+![情况2](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E6%97%A5%E5%BF%97_%E6%83%85%E5%86%B52.png)
 
 
 ### 协程
 #### 类图
-[协程类图](
+![协程类图](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%8D%8F%E7%A8%8B_%E7%B1%BB%E5%9B%BE.png)
 
 成员变量：
@@ -144,7 +144,7 @@ ucontext系列函数：
 不能太小：使用者可能无意在栈上分配一个缓冲区，导致栈溢出。
 暂时先固定为128K。
 
-##### 调度策略：
+##### 调度策略
 目前是非抢占式调度。只能由协程主动或者协程执行完毕，才会让出CPU。
 
 ##### 协程同步
@@ -153,7 +153,7 @@ ucontext系列函数：
 
 ### 协程调度
 #### 类图
-[协程调度](
+![协程调度](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%8D%8F%E7%A8%8B%E8%B0%83%E5%BA%A6_%E7%B1%BB%E5%9B%BE.png)
 
 ##### Processer
@@ -168,7 +168,7 @@ https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%8D%8F%E7%A8%8B%E8
 2. run()：开始进行协程调度。
 
 #### 协程调度示意图
-[协程调度示意图](
+![协程调度示意图](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%8D%8F%E7%A8%8B%E8%B0%83%E5%BA%A6_%E7%A4%BA%E6%84%8F%E5%9B%BE.png)
 
 每个线程都有一个本地变量t_cur_cotourine指向当前正在执行的协程对象。
@@ -265,7 +265,7 @@ int timerfd_settime(int fd, int flags,
                            struct itimerspec *old_value);  //为timer对象设置一个时间间隔，倒计时结束后timer fd将变为可读。
 ```
 
-[定时器](
+![定时器](
 https://raw.githubusercontent.com/gatsbyd/melon/master/pic/%E5%AE%9A%E6%97%B6%E5%99%A8.png)
 
 1. 定时器专门占用一个线程。这个线程中加入一个定时器协程，该协程会去读取timer fd，可读后说明有定时器超时，然后执行定时器对应的任务。
@@ -319,22 +319,22 @@ google::protobuf::Message* ProtobufCodec::createMessage(const std::string& typeN
 #### 数据格式
 ```
 |-------------------|
-|      total  byte      |        总的字节数
+|   total  byte     |        总的字节数
 |-------------------|
-|       typename     |         类型名
+|     typename      |         类型名
 |-------------------|
-|    typename len  |         类型名长度
+|    typename len   |         类型名长度
 |-------------------|
-|   protobuf data  |          Protobuf对象序列化后的数据
+|   protobuf data   |          Protobuf对象序列化后的数据
 |-------------------|
-|       checksum     |        整个消息的checksum
+|       checksum    |        整个消息的checksum
 |-------------------|
 ```
 某次rpc的过程如下：
 ```
 客户端包装请求并发送    ---------------->     服务端接收请求
-                                                        服务端解析请求，找到并执行对应的service::method
-客户端接收响并解析       <----------------     服务端将响应发回给客户端
+                                            服务端解析请求，找到并执行对应的service::method
+客户端接收响并解析      <----------------     服务端将响应发回给客户端
 ```
 
 
