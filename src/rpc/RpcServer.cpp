@@ -35,6 +35,7 @@ void RpcServer::handleClient(TcpConnection::Ptr conn) {
 	} else {
 		LOG_ERROR << "Unknown message";	
 	}
+	//TODO:客户端关闭
 	conn->shutdown();
 	conn->readUntilZero();
 	conn->close();

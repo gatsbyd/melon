@@ -23,8 +23,8 @@ int main(int args, char* argv[]) {
 		printf("Usage: %s threads\n", argv[0]);
 		return 0;
 	}
-	Logger::setLogLevel(LogLevel::INFO);
-	Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
+	//Logger::setLogLevel(LogLevel::INFO);
+	//Singleton<Logger>::getInstance()->addAppender("console", LogAppender::ptr(new ConsoleAppender()));
 
 	IpAddress listen_addr(5000);
 	int threads_num = std::atoi(argv[1]);

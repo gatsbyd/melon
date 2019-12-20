@@ -53,6 +53,7 @@ void Logger::setLogLevel(LogLevel logLevel) {
 }
 
 std::string Logger::format(LogEvent::ptr event) {
+	//TODO:待优化
 	std::ostringstream ss;
 	char buf[50];
 	time_t sec = event->timestamp_.getSec();
